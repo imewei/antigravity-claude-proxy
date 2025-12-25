@@ -3,8 +3,37 @@
  * Based on: https://github.com/NoeFabris/opencode-antigravity-auth
  */
 
-import { homedir } from 'os';
+import { homedir, platform, arch } from 'os';
 import { join } from 'path';
+
+/**
+ * Get the Antigravity database path based on the current platform.
+ * - macOS: ~/Library/Application Support/Antigravity/...
+ * - Windows: ~/AppData/Roaming/Antigravity/...
+ * - Linux/other: ~/.config/Antigravity/...
+ * @returns {string} Full path to the Antigravity state database
+ */
+function getAntigravityDbPath() {
+    const home = homedir();
+    switch (platform()) {
+        case 'darwin':
+            return join(home, 'Library/Application Support/Antigravity/User/globalStorage/state.vscdb');
+        case 'win32':
+            return join(home, 'AppData/Roaming/Antigravity/User/globalStorage/state.vscdb');
+        default: // linux, freebsd, etc.
+            return join(home, '.config/Antigravity/User/globalStorage/state.vscdb');
+    }
+}
+
+/**
+ * Generate platform-specific User-Agent string.
+ * @returns {string} User-Agent in format "antigravity/version os/arch"
+ */
+function getPlatformUserAgent() {
+    const os = platform();
+    const architecture = arch();
+    return `antigravity/1.11.5 ${os}/${architecture}`;
+}
 
 // Cloud Code API endpoints (in fallback order)
 const ANTIGRAVITY_ENDPOINT_DAILY = 'https://daily-cloudcode-pa.sandbox.googleapis.com';
@@ -18,7 +47,7 @@ export const ANTIGRAVITY_ENDPOINT_FALLBACKS = [
 
 // Required headers for Antigravity API requests
 export const ANTIGRAVITY_HEADERS = {
-    'User-Agent': 'antigravity/1.11.5 darwin/arm64',
+    'User-Agent': getPlatformUserAgent(),
     'X-Goog-Api-Client': 'google-cloud-sdk vscode_cloudshelleditor/0.1',
     'Client-Metadata': JSON.stringify({
         ideType: 'IDE_UNSPECIFIED',
@@ -80,10 +109,8 @@ export const ACCOUNT_CONFIG_PATH = join(
 );
 
 // Antigravity app database path (for legacy single-account token extraction)
-export const ANTIGRAVITY_DB_PATH = join(
-    homedir(),
-    'Library/Application Support/Antigravity/User/globalStorage/state.vscdb'
-);
+// Uses platform-specific path detection
+export const ANTIGRAVITY_DB_PATH = getAntigravityDbPath();
 
 export const DEFAULT_COOLDOWN_MS = 60 * 1000; // 1 minute default cooldown
 export const MAX_RETRIES = 5; // Max retry attempts across accounts
