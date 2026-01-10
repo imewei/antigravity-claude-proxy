@@ -285,6 +285,17 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
         }
     }
 
+    // All retries exhausted - try fallback model if enabled
+    if (fallbackEnabled) {
+        const fallbackModel = getFallbackModel(model);
+        if (fallbackModel) {
+            logger.warn(`[CloudCode] All retries exhausted for ${model}. Attempting fallback to ${fallbackModel} (streaming)`);
+            const fallbackRequest = { ...anthropicRequest, model: fallbackModel };
+            yield* sendMessageStream(fallbackRequest, accountManager, false); // Disable fallback for recursive call
+            return;
+        }
+    }
+
     throw new Error('Max retries exceeded');
 }
 
