@@ -22,7 +22,9 @@ document.addEventListener('alpine:init', () => {
         filters: {
             account: 'all',
             family: 'all',
-            search: ''
+            search: '',
+            sortCol: 'avgQuota',
+            sortAsc: true
         },
 
         // Settings for calculation
@@ -177,18 +179,50 @@ document.addEventListener('alpine:init', () => {
                     resetIn: minResetTime ? window.utils.formatTimeUntil(minResetTime) : '-',
                     quotaInfo,
                     pinned: !!config.pinned,
-                    hidden: !!isHidden // Use computed visibility
+                    hidden: !!isHidden, // Use computed visibility
+                    activeCount: quotaInfo.filter(q => q.pct > 0).length
                 });
             });
 
-            // Sort: Pinned first, then by avgQuota (descending)
+            // Sort: Pinned first, then by selected column
+            const sortCol = this.filters.sortCol;
+            const sortAsc = this.filters.sortAsc;
+
             this.quotaRows = rows.sort((a, b) => {
                 if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-                return b.avgQuota - a.avgQuota;
+                
+                let valA = a[sortCol];
+                let valB = b[sortCol];
+
+                // Handle nulls (always push to bottom)
+                if (valA === valB) return 0;
+                if (valA === null || valA === undefined) return 1;
+                if (valB === null || valB === undefined) return -1;
+
+                if (typeof valA === 'string' && typeof valB === 'string') {
+                    return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                }
+
+                return sortAsc ? valA - valB : valB - valA;
             });
 
             // Trigger Dashboard Update if active
             // Ideally dashboard watches this store.
+        },
+
+        setSort(col) {
+            if (this.filters.sortCol === col) {
+                this.filters.sortAsc = !this.filters.sortAsc;
+            } else {
+                this.filters.sortCol = col;
+                // Default sort direction: Descending for numbers/stats, Ascending for text/time
+                if (['avgQuota', 'activeCount'].includes(col)) {
+                    this.filters.sortAsc = false;
+                } else {
+                    this.filters.sortAsc = true;
+                }
+            }
+            this.computeQuotaRows();
         },
 
         getModelFamily(modelId) {
