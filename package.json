@@ -58,7 +58,7 @@
         "url": "https://github.com/badri-s2001/antigravity-claude-proxy/issues"
     },
     "engines": {
-        "node": ">=18.0.0"
+        "node": ">=25.0.0"
     },
     "dependencies": {
         "async-mutex": "^0.5.0",
