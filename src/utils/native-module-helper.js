@@ -4,9 +4,11 @@
  * incompatible after a Node.js version update.
  */
 
-import { execSync } from 'child_process';
-import { dirname, join } from 'path';
-import { existsSync } from 'fs';
+import { execSync } from 'node:child_process';
+import { dirname, join } from 'node:path';
+import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 import { logger } from './logger.js';
 
 /**
@@ -17,7 +19,7 @@ import { logger } from './logger.js';
 export function isModuleVersionError(error) {
     const message = error?.message || '';
     return message.includes('NODE_MODULE_VERSION') &&
-           message.includes('was compiled against a different Node.js version');
+        message.includes('was compiled against a different Node.js version');
 }
 
 /**

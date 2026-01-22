@@ -4,7 +4,7 @@
  * automatic failover, and smart cooldown for rate-limited accounts.
  */
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import { ACCOUNT_CONFIG_PATH } from '../constants.js';
 import { loadAccounts, loadDefaultAccount, saveAccounts } from './storage.js';
 import {
@@ -37,7 +37,7 @@ export class AccountManager extends EventEmitter {
     #strategy = null;
     #strategyName = DEFAULT_STRATEGY;
     #saveTimeout = null;
-    #isSaving = false;
+    #saveResolves = [];
 
     // Per-account caches
     #tokenCache = new Map(); // email -> { token, extractedAt }
@@ -332,11 +332,9 @@ export class AccountManager extends EventEmitter {
      * Save current state to disk (async)
      * @returns {Promise<void>}
      */
-    #saveTimeout = null;
-    #isSaving = false;
-
     /**
      * Save current state to disk (async, debounced)
+     * Aborted saves will resolve immediately (optimistic).
      * @returns {Promise<void>}
      */
     async saveToDisk() {
@@ -345,18 +343,29 @@ export class AccountManager extends EventEmitter {
         }
 
         return new Promise((resolve, reject) => {
+            this.#saveResolves.push({ resolve, reject });
+
             this.#saveTimeout = setTimeout(async () => {
+                const currentResolves = [...this.#saveResolves];
+                this.#saveResolves = [];
+                this.#saveTimeout = null;
+
                 try {
-                    this.#isSaving = true;
                     await saveAccounts(this.#configPath, this.#accounts, this.#settings, this.#currentIndex);
                     this.emit('update', this.getStatus());
-                    resolve();
+
+                    // Resolve all waiting promises
+                    for (const { resolve } of currentResolves) {
+                        resolve();
+                    }
                 } catch (error) {
                     logger.error('[AccountManager] Save failed:', error);
-                    reject(error);
+                    // Reject all waiting promises
+                    for (const { reject } of currentResolves) {
+                        reject(error);
+                    }
                 } finally {
-                    this.#isSaving = false;
-                    this.#saveTimeout = null;
+                    // Cleanup
                 }
             }, 500); // 500ms debounce
         });

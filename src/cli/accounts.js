@@ -13,12 +13,12 @@
  *   node src/cli/accounts.js clear    # Remove all accounts
  */
 
-import { createInterface } from 'readline/promises';
-import { stdin, stdout } from 'process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
-import { dirname } from 'path';
-import { spawn } from 'child_process';
-import net from 'net';
+import { createInterface } from 'node:readline/promises';
+import { stdin, stdout } from 'node:process';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { spawn } from 'node:child_process';
+import net from 'node:net';
 import { ACCOUNT_CONFIG_PATH, DEFAULT_PORT, MAX_ACCOUNTS } from '../constants.js';
 import {
     getAuthorizationUrl,

@@ -6,8 +6,9 @@
  * Uses a local callback server to automatically capture the auth code.
  */
 
-import crypto from 'crypto';
-import http from 'http';
+import crypto from 'node:crypto';
+import http from 'node:http';
+import { URL } from 'node:url';
 import {
     ANTIGRAVITY_ENDPOINT_FALLBACKS,
     LOAD_CODE_ASSIST_HEADERS,

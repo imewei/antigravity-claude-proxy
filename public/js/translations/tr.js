@@ -86,7 +86,6 @@ window.translations.tr = {
     toggleVisibility: "Görünürlüğü Değiştir",
     noModels: "MODEL ALGILANMADI",
     modelMappingHint: "Sunucu tarafı model yönlendirme. Claude Code kullanıcıları: istemci tarafı kurulumu için 'Claude CLI' sekmesine bakın.",
-    modelMapping: "Eşleştirme (Hedef Model ID)",
     // Settings - Claude
     proxyConnection: "Proxy Bağlantısı",
     modelSelection: "Model Seçimi",
@@ -275,7 +274,6 @@ window.translations.tr = {
     gemini1mDesc: "1M bağlam penceresi desteği için Gemini modellerine [1m] son eki ekler.",
     gemini1mWarning: "⚠ Büyük bağlam, Gemini-3-Pro performansını düşürebilir.",
     clickToSet: "Yapılandırmak için tıklayın...",
-    none: "Hiçbiri",
     // Quota Distribution
     quotaDistribution: "Kota Dağılımı",
     resetsIn: "{time} içinde sıfırlanır",

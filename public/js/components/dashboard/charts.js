@@ -75,7 +75,7 @@ function isCanvasReady(canvas) {
   try {
     const ctx = canvas.getContext("2d");
     return !!ctx;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -148,25 +148,25 @@ window.DashboardCharts.updateCharts = function (component) {
   if (canvas._chartInstance) {
     console.debug("Destroying existing quota chart from canvas property");
     try {
-        canvas._chartInstance.destroy();
-    } catch(e) { console.warn(e); }
+      canvas._chartInstance.destroy();
+    } catch (e) { console.warn(e); }
     canvas._chartInstance = null;
   }
-  
+
   // Also check component state as backup
   if (component.charts.quotaDistribution) {
-     try {
-         component.charts.quotaDistribution.destroy();
-     } catch(e) { }
-     component.charts.quotaDistribution = null;
+    try {
+      component.charts.quotaDistribution.destroy();
+    } catch { /* ignore */ }
+    component.charts.quotaDistribution = null;
   }
-  
+
   // Also try Chart.js registry
   if (typeof Chart !== "undefined" && Chart.getChart) {
-      const regChart = Chart.getChart(canvas);
-      if (regChart) {
-          try { regChart.destroy(); } catch(e) {}
-      }
+    const regChart = Chart.getChart(canvas);
+    if (regChart) {
+      try { regChart.destroy(); } catch { /* ignore */ }
+    }
   }
 
   if (typeof Chart === "undefined") {
@@ -244,15 +244,15 @@ window.DashboardCharts.updateCharts = function (component) {
       family === "claude"
         ? store.t("claudeActive")
         : family === "gemini"
-        ? store.t("geminiActive")
-        : `${familyName} ${store.t("activeSuffix")}`;
+          ? store.t("geminiActive")
+          : `${familyName} ${store.t("activeSuffix")}`;
 
     const depletedLabel =
       family === "claude"
         ? store.t("claudeEmpty")
         : family === "gemini"
-        ? store.t("geminiEmpty")
-        : `${familyName} ${store.t("depleted")}`;
+          ? store.t("geminiEmpty")
+          : `${familyName} ${store.t("depleted")}`;
 
     // Active segment
     data.push(activeVal);
@@ -270,43 +270,43 @@ window.DashboardCharts.updateCharts = function (component) {
   // Create Chart
   try {
     const newChart = new Chart(canvas, {
-       // ... config
-       type: "doughnut",
-       data: {
-         labels: labels,
-         datasets: [
-           {
-             data: data,
-             backgroundColor: colors,
-             borderColor: getThemeColor("--color-space-950"),
-             borderWidth: 0,
-             hoverOffset: 0,
-             borderRadius: 0,
-           },
-         ],
-       },
-       options: {
-         responsive: true,
-         maintainAspectRatio: false,
-         cutout: "85%",
-         rotation: -90,
-         circumference: 360,
-         plugins: {
-           legend: { display: false },
-           tooltip: { enabled: false },
-           title: { display: false },
-         },
-         animation: {
-           // Disable animation for quota chart to prevent "double refresh" visual glitch
-           duration: 0
-         },
-       },
+      // ... config
+      type: "doughnut",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            data: data,
+            backgroundColor: colors,
+            borderColor: getThemeColor("--color-space-950"),
+            borderWidth: 0,
+            hoverOffset: 0,
+            borderRadius: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "85%",
+        rotation: -90,
+        circumference: 360,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: false },
+          title: { display: false },
+        },
+        animation: {
+          // Disable animation for quota chart to prevent "double refresh" visual glitch
+          duration: 0
+        },
+      },
     });
-    
+
     // SAVE INSTANCE TO CANVAS AND COMPONENT
     canvas._chartInstance = newChart;
     component.charts.quotaDistribution = newChart;
-    
+
   } catch (e) {
     console.error("Failed to create quota chart:", e);
   }
@@ -327,25 +327,25 @@ window.DashboardCharts.updateTrendChart = function (component) {
   console.log("[updateTrendChart] Starting update...");
 
   const canvas = document.getElementById("usageTrendChart");
-  
+
   // FORCE DESTROY: Check for existing chart on the canvas element property
   if (canvas) {
-      if (canvas._chartInstance) {
-        console.debug("Destroying existing trend chart from canvas property");
-        try {
-            canvas._chartInstance.stop();
-            canvas._chartInstance.destroy();
-        } catch(e) { console.warn(e); }
-        canvas._chartInstance = null;
+    if (canvas._chartInstance) {
+      console.debug("Destroying existing trend chart from canvas property");
+      try {
+        canvas._chartInstance.stop();
+        canvas._chartInstance.destroy();
+      } catch (e) { console.warn(e); }
+      canvas._chartInstance = null;
+    }
+
+    // Also try Chart.js registry
+    if (typeof Chart !== "undefined" && Chart.getChart) {
+      const regChart = Chart.getChart(canvas);
+      if (regChart) {
+        try { regChart.stop(); regChart.destroy(); } catch { /* ignore */ }
       }
-      
-      // Also try Chart.js registry
-      if (typeof Chart !== "undefined" && Chart.getChart) {
-          const regChart = Chart.getChart(canvas);
-          if (regChart) {
-              try { regChart.stop(); regChart.destroy(); } catch(e) {}
-          }
-      }
+    }
   }
 
   // Also check component state
@@ -353,7 +353,7 @@ window.DashboardCharts.updateTrendChart = function (component) {
     try {
       component.charts.usageTrend.stop();
       component.charts.usageTrend.destroy();
-    } catch (e) { }
+    } catch { /* ignore */ }
     component.charts.usageTrend = null;
   }
 
@@ -432,7 +432,7 @@ window.DashboardCharts.updateTrendChart = function (component) {
     } else if (isMultiDay || timeRange === 'all') {
       // Multi-day data: show MM/DD HH:MM
       return date.toLocaleDateString([], { month: '2-digit', day: '2-digit' }) + ' ' +
-             date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else {
       // Same day: show HH:MM only
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -575,7 +575,7 @@ window.DashboardCharts.updateTrendChart = function (component) {
         },
       },
     });
-    
+
     // SAVE INSTANCE
     canvas._chartInstance = newChart;
     component.charts.usageTrend = newChart;

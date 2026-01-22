@@ -4,7 +4,7 @@
  * Builds request payloads and headers for the Cloud Code API.
  */
 
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import {
     ANTIGRAVITY_HEADERS,
     ANTIGRAVITY_SYSTEM_INSTRUCTION,

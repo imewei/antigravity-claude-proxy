@@ -5,8 +5,8 @@
  * Simple ANSI codes used to avoid dependencies.
  */
 
-import { EventEmitter } from 'events';
-import util from 'util';
+import { EventEmitter } from 'node:events';
+import util from 'node:util';
 
 const COLORS = {
     RESET: '\x1b[0m',

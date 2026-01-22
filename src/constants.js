@@ -3,8 +3,8 @@
  * Based on: https://github.com/NoeFabris/opencode-antigravity-auth
  */
 
-import { homedir, platform, arch } from 'os';
-import { join } from 'path';
+import { homedir, platform, arch } from 'node:os';
+import { join } from 'node:path';
 import { config } from './config.js';
 
 /**

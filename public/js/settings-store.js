@@ -16,7 +16,7 @@ document.addEventListener('alpine:init', () => {
 
         // Call this method when toggling settings in the UI
         toggle(key) {
-            if (this.hasOwnProperty(key) && typeof this[key] === 'boolean') {
+            if (Object.prototype.hasOwnProperty.call(this, key) && typeof this[key] === 'boolean') {
                 this[key] = !this[key];
                 this.saveSettings(true);
             }
@@ -28,7 +28,7 @@ document.addEventListener('alpine:init', () => {
                 const parsed = JSON.parse(saved);
                 Object.keys(parsed).forEach(k => {
                     // Only load keys that exist in our default state (safety)
-                    if (this.hasOwnProperty(k)) this[k] = parsed[k];
+                    if (Object.prototype.hasOwnProperty.call(this, k)) this[k] = parsed[k];
                 });
             }
         },

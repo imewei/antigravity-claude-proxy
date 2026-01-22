@@ -34,7 +34,7 @@ window.DashboardStats = window.DashboardStats || {};
  * @param {object} component.stats.subscription - 订阅级别分布
  * @returns {void}
  */
-window.DashboardStats.updateStats = function(component) {
+window.DashboardStats.updateStats = function (component) {
     const accounts = Alpine.store('data').accounts;
     let active = 0, limited = 0;
 
@@ -80,15 +80,15 @@ window.DashboardStats.updateStats = function(component) {
     let totalTrackedModels = 0;
 
     enabledAccounts.forEach(acc => {
-         const limits = Object.entries(acc.limits || {});
-         limits.forEach(([id, l]) => {
-             totalTrackedModels++;
-             if (!l || l.remainingFraction == null || l.remainingFraction <= 0.05) {
-                 totalLimitedModels++;
-             }
-         });
+        const limits = Object.entries(acc.limits || {});
+        limits.forEach(([, l]) => {
+            totalTrackedModels++;
+            if (!l || l.remainingFraction == null || l.remainingFraction <= 0.05) {
+                totalLimitedModels++;
+            }
+        });
     });
-    
+
     component.stats.modelUsage = {
         limited: totalLimitedModels,
         total: totalTrackedModels

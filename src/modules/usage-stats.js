@@ -1,6 +1,6 @@
-import fs from 'fs';
-import { promises as fsPromises } from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import { promises as fsPromises } from 'node:fs';
+import path from 'node:path';
 
 import { USAGE_HISTORY_PATH } from '../constants.js';
 import { logger } from '../utils/logger.js';

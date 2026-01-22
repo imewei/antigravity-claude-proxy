@@ -5,7 +5,7 @@
  * Handles thinking blocks, text blocks, and tool use blocks.
  */
 
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { MIN_SIGNATURE_LENGTH, getModelFamily } from '../constants.js';
 import { EmptyResponseError } from '../errors.js';
 import { cacheSignature, cacheThinkingSignature } from '../format/signature-cache.js';

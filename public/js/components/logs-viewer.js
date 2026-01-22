@@ -28,7 +28,7 @@ window.Components.logsViewer = () => ({
         try {
             const regex = new RegExp(query, 'i');
             matcher = (msg) => regex.test(msg);
-        } catch (e) {
+        } catch {
             // Invalid regex, fallback to case-insensitive string search
             const lowerQuery = query.toLowerCase();
             matcher = (msg) => msg.toLowerCase().includes(lowerQuery);
@@ -51,8 +51,8 @@ window.Components.logsViewer = () => ({
         });
 
         // Watch filters to maintain auto-scroll if enabled
-        this.$watch('searchQuery', () => { if(this.isAutoScroll) this.$nextTick(() => this.scrollToBottom()) });
-        this.$watch('filters', () => { if(this.isAutoScroll) this.$nextTick(() => this.scrollToBottom()) });
+        this.$watch('searchQuery', () => { if (this.isAutoScroll) this.$nextTick(() => this.scrollToBottom()) });
+        this.$watch('filters', () => { if (this.isAutoScroll) this.$nextTick(() => this.scrollToBottom()) });
     },
 
     startLogStream() {
@@ -78,8 +78,8 @@ window.Components.logsViewer = () => ({
                 if (this.isAutoScroll) {
                     this.$nextTick(() => this.scrollToBottom());
                 }
-            } catch (e) {
-                console.error('Log parse error:', e);
+            } catch {
+                console.error('Failed to parse log message.');
             }
         };
 

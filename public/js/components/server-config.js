@@ -173,7 +173,7 @@ window.Components.serverConfig = () => ({
             const validation = window.Validators.validate(value, validator, true);
             if (!validation.isValid) {
                 // Rollback to previous value
-                this.serverConfig[fieldName] = this.serverConfig[fieldName];
+                this.fetchServerConfig();
                 return;
             }
             value = validation.value;

@@ -3,7 +3,7 @@
  * Converts Google Generative AI responses to Anthropic Messages API format
  */
 
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { MIN_SIGNATURE_LENGTH, getModelFamily } from '../constants.js';
 import { cacheSignature, cacheThinkingSignature } from './signature-cache.js';
 

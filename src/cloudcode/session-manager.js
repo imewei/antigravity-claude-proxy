@@ -6,7 +6,8 @@
  * the same conversation uses the same session across turns.
  */
 
-import crypto from 'crypto';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
 
 /**
  * Derive a stable session ID from the first user message in the conversation.

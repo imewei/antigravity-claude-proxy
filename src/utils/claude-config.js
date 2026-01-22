@@ -5,9 +5,9 @@
  * Location: ~/.claude/settings.json (Windows: %USERPROFILE%\.claude\settings.json)
  */
 
-import fs from 'fs/promises';
-import path from 'path';
-import os from 'os';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
 import { logger } from './logger.js';
 import { DEFAULT_PRESETS } from '../constants.js';
 

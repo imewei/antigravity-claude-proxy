@@ -221,7 +221,6 @@ window.translations.en = {
     allCaps: "ALL",
     claudeCaps: "CLAUDE",
     geminiCaps: "GEMINI",
-    modelMapping: "Mapping (Target Model ID)",
     systemInfo: "System Information",
     refresh: "Refresh",
     runtimeConfig: "Runtime Configuration",
@@ -293,7 +292,6 @@ window.translations.en = {
     gemini1mDesc: "Appends [1m] suffix to Gemini models for 1M context window support.",
     gemini1mWarning: "⚠ Large context may reduce Gemini-3-Pro performance.",
     clickToSet: "Click to configure...",
-    none: "None",
     // Quota Distribution
     quotaDistribution: "Quota Distribution",
     resetsIn: "Resets in {time}",

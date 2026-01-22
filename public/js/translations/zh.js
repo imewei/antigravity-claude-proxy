@@ -86,7 +86,6 @@ window.translations.zh = {
     toggleVisibility: "切换可见性",
     noModels: "未检测到模型",
     modelMappingHint: "服务端模型路由功能。Claude Code 用户请使用 'Claude CLI' 标签页以便捷配置。",
-    modelMapping: "映射 (目标模型 ID)",
     // Settings - Claude
     proxyConnection: "代理连接",
     modelSelection: "模型选择",
@@ -293,7 +292,6 @@ window.translations.zh = {
     gemini1mDesc: "为 Gemini 模型添加 [1m] 后缀以支持 1M 上下文窗口。",
     gemini1mWarning: "⚠ 大上下文可能降低 Gemini-3-Pro 性能。",
     clickToSet: "点击进行配置...",
-    none: "无",
     // Quota Distribution
     quotaDistribution: "配额分布",
     resetsIn: "{time} 后重置",

@@ -50,7 +50,7 @@ function streamRequest(body) {
                             const eventType = eventLine.replace('event:', '').trim();
                             const eventData = JSON.parse(dataLine.replace('data:', '').trim());
                             events.push({ type: eventType, data: eventData });
-                        } catch (e) { }
+                        } catch { /* ignore */ }
                     }
                 }
 
@@ -82,7 +82,7 @@ function streamRequest(body) {
                         }
                     } else if (event.type === 'content_block_stop') {
                         if (currentBlock?.type === 'tool_use' && currentBlock.partial_json) {
-                            try { currentBlock.input = JSON.parse(currentBlock.partial_json); } catch (e) { }
+                            try { currentBlock.input = JSON.parse(currentBlock.partial_json); } catch { /* ignore */ }
                             delete currentBlock.partial_json;
                         }
                         if (currentBlock) content.push(currentBlock);

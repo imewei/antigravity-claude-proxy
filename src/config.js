@@ -1,6 +1,6 @@
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 import { logger } from './utils/logger.js';
 
 // Default config
@@ -70,13 +70,13 @@ function loadConfig() {
             const userConfig = JSON.parse(fileContent);
             config = { ...DEFAULT_CONFIG, ...userConfig };
         } else {
-             // Try looking in current dir for config.json as fallback
-             const localConfigPath = path.resolve('config.json');
-             if (fs.existsSync(localConfigPath)) {
-                 const fileContent = fs.readFileSync(localConfigPath, 'utf8');
-                 const userConfig = JSON.parse(fileContent);
-                 config = { ...DEFAULT_CONFIG, ...userConfig };
-             }
+            // Try looking in current dir for config.json as fallback
+            const localConfigPath = path.resolve('config.json');
+            if (fs.existsSync(localConfigPath)) {
+                const fileContent = fs.readFileSync(localConfigPath, 'utf8');
+                const userConfig = JSON.parse(fileContent);
+                config = { ...DEFAULT_CONFIG, ...userConfig };
+            }
         }
 
         // Environment overrides

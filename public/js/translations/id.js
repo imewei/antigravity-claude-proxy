@@ -359,7 +359,6 @@ window.translations.id = {
     failedToSavePreset: "Gagal menyimpan preset",
     noPresetSelected: "Tidak ada preset dipilih",
     deletePresetConfirm: "Hapus preset \"{name}\"?",
-    deleteFailed: "Gagal menghapus",
     failedToDeletePreset: "Gagal menghapus preset",
     failedToChangePassword: "Gagal mengubah password",
     passwordChangedSuccess: "Password berhasil diubah",
