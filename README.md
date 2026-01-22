@@ -41,30 +41,23 @@ A proxy server that exposes an **Anthropic-compatible API** backed by **Antigrav
 
 ## Installation
 
-### Option 1: npm (Recommended)
+### Install from Source
+
+Since this package is not published to the npm registry, you must install it from the source.
 
 ```bash
-# Run directly with npx (no install needed)
-npx antigravity-claude-proxy@latest start
-
-# Or install globally
-npm install -g antigravity-claude-proxy@latest
-antigravity-claude-proxy start
-```
-
-### Option 2: Clone Repository
-
-```bash
-git clone https://github.com/badri-s2001/antigravity-claude-proxy.git
+# 1. Clone the repository
+git clone https://github.com/imewei/antigravity-claude-proxy.git
 cd antigravity-claude-proxy
 
-# For production/deployment (omits dev tools):
-npm install --omit=dev
-npm start
+# 2. Install dependencies
+npm install
 
-# For development (includes css tools):
-# npm install
-# npm run dev
+# 3. Link the package globally (optional, to use 'antigravity-claude-proxy' command)
+npm link
+
+# 4. Start the server
+npm start
 ```
 
 ---
@@ -74,13 +67,10 @@ npm start
 ### 1. Start the Proxy Server
 
 ```bash
-# If installed via npm
+# If linked globally
 antigravity-claude-proxy start
 
-# If using npx
-npx antigravity-claude-proxy@latest start
-
-# If cloned locally
+# Or running directly from source directory
 npm start
 ```
 
