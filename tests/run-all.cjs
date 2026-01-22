@@ -20,7 +20,8 @@ const tests = [
     { name: 'OAuth No-Browser Mode', file: 'test-oauth-no-browser.cjs' },
     { name: 'Empty Response Retry', file: 'test-empty-response-retry.cjs' },
     { name: 'Schema Sanitizer', file: 'test-schema-sanitizer.cjs' },
-    { name: 'Streaming Whitespace', file: 'test-streaming-whitespace.cjs' }
+    { name: 'Streaming Whitespace', file: 'test-streaming-whitespace.cjs' },
+    { name: 'Recursive Fallback', file: 'test-recursive-fallback.cjs' }
 ];
 
 async function runTest(test) {
