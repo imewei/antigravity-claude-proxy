@@ -59,6 +59,10 @@ jobs:
               # Checking package.json: "test": "node tests/run-all.cjs"
               # README says: "Tests require the server to be running"
               # We need to start the server in detached mode before testing.
+              env:
+                  ACCOUNT_CONFIG_PATH: tests/fixtures/ci-accounts.json
+                  ANTHROPIC_BASE_URL: http://localhost:8080
+                  ANTHROPIC_API_KEY: dummy
               run: |
                   npm start &
                   npx wait-on http://localhost:8080 -t 30000

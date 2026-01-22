@@ -1,0 +1,19 @@
+{
+    "accounts": [
+        {
+            "email": "ci-test@example.com",
+            "source": "manual",
+            "apiKey": "dummy_test_token",
+            "enabled": true,
+            "projectId": "test-project",
+            "subscription": {
+                "tier": "free",
+                "projectId": "test-project"
+            }
+        }
+    ],
+    "settings": {
+        "strategy": "hybrid"
+    },
+    "activeIndex": 0
+}

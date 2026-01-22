@@ -83,6 +83,7 @@ function loadConfig() {
         if (process.env.API_KEY) config.apiKey = process.env.API_KEY;
         if (process.env.WEBUI_PASSWORD) config.webuiPassword = process.env.WEBUI_PASSWORD;
         if (process.env.DEBUG === 'true') config.debug = true;
+        if (process.env.ACCOUNT_CONFIG_PATH) config.accountConfigPath = process.env.ACCOUNT_CONFIG_PATH;
     } catch (error) {
         logger.error('[Config] Error loading config:', error);
     }
