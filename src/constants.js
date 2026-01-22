@@ -4,7 +4,7 @@
  */
 
 import { homedir, platform, arch } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { config } from './config.js';
 
 /**
@@ -79,8 +79,12 @@ export const ANTIGRAVITY_AUTH_PORT = 9092;
 export const DEFAULT_PORT = config?.port || 8080;
 
 // Multi-account configuration
-export const ACCOUNT_CONFIG_PATH =
-    config?.accountConfigPath || join(homedir(), '.config/antigravity-proxy/accounts.json');
+const ACCOUNT_CONFIG_PATH_ENV = process.env.ACCOUNT_CONFIG_PATH;
+export const ACCOUNT_CONFIG_PATH = ACCOUNT_CONFIG_PATH_ENV
+    ? resolve(ACCOUNT_CONFIG_PATH_ENV)
+    : config?.accountConfigPath
+      ? resolve(config.accountConfigPath)
+      : join(homedir(), '.config/antigravity-proxy/accounts.json');
 
 // Usage history persistence path
 export const USAGE_HISTORY_PATH = join(homedir(), '.config/antigravity-proxy/usage-history.json');
