@@ -20,7 +20,8 @@ import {
 } from '../constants.js';
 import { convertGoogleToAnthropic } from '../format/index.js';
 import { isRateLimitError, isAuthError } from '../errors.js';
-import { formatDuration, sleep, isNetworkError, createTimeoutSignal } from '../utils/helpers.js';
+import { formatDuration, sleep, isNetworkError, isTimeoutError } from '../utils/helpers.js';
+import { fetchWithTimeout } from './fetch-utils.js';
 import { logger } from '../utils/logger.js';
 import { parseResetTime } from './rate-limit-parser.js';
 import { buildCloudCodeRequest, buildHeaders } from './request-builder.js';
@@ -228,27 +229,19 @@ export async function sendMessage(anthropicRequest, accountManager, fallbackEnab
                         ? `${endpoint}/v1internal:streamGenerateContent?alt=sse`
                         : `${endpoint}/v1internal:generateContent`;
 
-                    const { signal, cleanup, didTimeout } = createTimeoutSignal(REQUEST_TIMEOUT_MS);
-                    let response;
-                    try {
-                        response = await fetch(url, {
+                    const response = await fetchWithTimeout(
+                        url,
+                        {
                             method: 'POST',
                             headers: buildHeaders(
                                 token,
                                 model,
                                 isThinking ? 'text/event-stream' : 'application/json'
                             ),
-                            body: JSON.stringify(payload),
-                            signal
-                        });
-                    } catch (fetchError) {
-                        if (didTimeout()) {
-                            throw new Error('Request timeout');
-                        }
-                        throw fetchError;
-                    } finally {
-                        cleanup();
-                    }
+                            body: JSON.stringify(payload)
+                        },
+                        REQUEST_TIMEOUT_MS
+                    );
 
                     if (!response.ok) {
                         const errorText = await response.text();
@@ -436,6 +429,11 @@ export async function sendMessage(anthropicRequest, accountManager, fallbackEnab
             }
 
             if (isNetworkError(error)) {
+                if (isTimeoutError(error)) {
+                    logger.warn(
+                        `[CloudCode] Request timeout for ${account.email}, trying next account...`
+                    );
+                }
                 accountManager.notifyFailure(account, model);
 
                 // Gap 2: Check consecutive failures for extended cooldown

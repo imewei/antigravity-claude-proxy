@@ -19,13 +19,20 @@ import {
     REQUEST_TIMEOUT_MS
 } from '../constants.js';
 import { isRateLimitError, isAuthError, isEmptyResponseError } from '../errors.js';
-import { formatDuration, sleep, isNetworkError, createTimeoutSignal } from '../utils/helpers.js';
+import {
+    formatDuration,
+    sleep,
+    isNetworkError,
+    isTimeoutError,
+    getExponentialBackoffMs
+} from '../utils/helpers.js';
 import { logger } from '../utils/logger.js';
 import { parseResetTime } from './rate-limit-parser.js';
 import { buildCloudCodeRequest, buildHeaders } from './request-builder.js';
 import { streamSSEResponse } from './sse-streamer.js';
 import { getFallbackModel } from '../fallback-config.js';
 import crypto from 'node:crypto';
+import { fetchWithTimeout } from './fetch-utils.js';
 
 /**
  * Gap 1: Rate limit deduplication - prevents thundering herd on concurrent rate limits
@@ -230,31 +237,16 @@ export async function* sendMessageStream(
                 try {
                     const url = `${endpoint}/v1internal:streamGenerateContent?alt=sse`;
 
-                    const { signal: timeoutSignal, cleanup, didTimeout } = createTimeoutSignal(
+                    const response = await fetchWithTimeout(
+                        url,
+                        {
+                            method: 'POST',
+                            headers: buildHeaders(token, model, 'text/event-stream'),
+                            body: JSON.stringify(payload)
+                        },
                         REQUEST_TIMEOUT_MS,
                         signal
                     );
-                    const fetchOptions = {
-                        method: 'POST',
-                        headers: buildHeaders(token, model, 'text/event-stream'),
-                        body: JSON.stringify(payload),
-                        signal: timeoutSignal
-                    };
-
-                    let response;
-                    try {
-                        response = await fetch(url, fetchOptions);
-                    } catch (fetchError) {
-                        if (didTimeout()) {
-                            throw new Error('Request timeout');
-                        }
-                        if (fetchError?.name === 'AbortError') {
-                            throw fetchError;
-                        }
-                        throw fetchError;
-                    } finally {
-                        cleanup();
-                    }
 
                     if (!response.ok) {
                         const errorText = await response.text();
@@ -395,38 +387,23 @@ export async function* sendMessageStream(
                             }
 
                             // Exponential backoff: 500ms, 1000ms, 2000ms
-                            const backoffMs = 500 * Math.pow(2, emptyRetries);
+                            const backoffMs = getExponentialBackoffMs(500, emptyRetries);
                             logger.warn(
                                 `[CloudCode] Empty response, retry ${emptyRetries + 1}/${MAX_EMPTY_RESPONSE_RETRIES} after ${backoffMs}ms...`
                             );
                             await sleep(backoffMs);
 
                             // Refetch the response
-                            const {
-                                signal: retrySignal,
-                                cleanup: retryCleanup,
-                                didTimeout: retryDidTimeout
-                            } = createTimeoutSignal(REQUEST_TIMEOUT_MS, signal);
-                            const retryFetchOptions = {
-                                method: 'POST',
-                                headers: buildHeaders(token, model, 'text/event-stream'),
-                                body: JSON.stringify(payload),
-                                signal: retrySignal
-                            };
-
-                            try {
-                                currentResponse = await fetch(url, retryFetchOptions);
-                            } catch (retryFetchError) {
-                                if (retryDidTimeout()) {
-                                    throw new Error('Request timeout');
-                                }
-                                if (retryFetchError?.name === 'AbortError') {
-                                    throw retryFetchError;
-                                }
-                                throw retryFetchError;
-                            } finally {
-                                retryCleanup();
-                            }
+                            currentResponse = await fetchWithTimeout(
+                                url,
+                                {
+                                    method: 'POST',
+                                    headers: buildHeaders(token, model, 'text/event-stream'),
+                                    body: JSON.stringify(payload)
+                                },
+                                REQUEST_TIMEOUT_MS,
+                                signal
+                            );
 
                             // Handle specific error codes on retry
                             if (!currentResponse.ok) {
@@ -469,31 +446,20 @@ export async function* sendMessageStream(
                                     );
                                     await sleep(1000);
                                     await sleep(1000);
-                                    const {
-                                        signal: nextRetrySignal,
-                                        cleanup: nextRetryCleanup,
-                                        didTimeout: nextRetryDidTimeout
-                                    } = createTimeoutSignal(REQUEST_TIMEOUT_MS, signal);
-                                    const nextRetryOptions = {
-                                        method: 'POST',
-                                        headers: buildHeaders(token, model, 'text/event-stream'),
-                                        body: JSON.stringify(payload),
-                                        signal: nextRetrySignal
-                                    };
-
-                                    try {
-                                        currentResponse = await fetch(url, nextRetryOptions);
-                                    } catch (nextRetryError) {
-                                        if (nextRetryDidTimeout()) {
-                                            throw new Error('Request timeout');
-                                        }
-                                        if (nextRetryError?.name === 'AbortError') {
-                                            throw nextRetryError;
-                                        }
-                                        throw nextRetryError;
-                                    } finally {
-                                        nextRetryCleanup();
-                                    }
+                                    currentResponse = await fetchWithTimeout(
+                                        url,
+                                        {
+                                            method: 'POST',
+                                            headers: buildHeaders(
+                                                token,
+                                                model,
+                                                'text/event-stream'
+                                            ),
+                                            body: JSON.stringify(payload)
+                                        },
+                                        REQUEST_TIMEOUT_MS,
+                                        signal
+                                    );
                                     if (currentResponse.ok) {
                                         continue;
                                     }
@@ -566,6 +532,11 @@ export async function* sendMessageStream(
             }
 
             if (isNetworkError(error)) {
+                if (isTimeoutError(error)) {
+                    logger.warn(
+                        `[CloudCode] Request timeout for ${account.email} (stream), trying next account...`
+                    );
+                }
                 accountManager.notifyFailure(account, model);
 
                 // Gap 2: Check consecutive failures for extended cooldown

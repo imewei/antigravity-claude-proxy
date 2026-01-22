@@ -96,3 +96,23 @@ export function isNetworkError(error) {
         msg.includes('gateway timeout')
     );
 }
+
+/**
+ * Check if an error is a request timeout
+ * @param {Error} error - The error to check
+ * @returns {boolean} True if it is a timeout error
+ */
+export function isTimeoutError(error) {
+    const msg = (error?.message || '').toLowerCase();
+    return error?.name === 'TimeoutError' || msg.includes('request timeout');
+}
+
+/**
+ * Calculate exponential backoff in milliseconds
+ * @param {number} baseMs - Base delay in milliseconds
+ * @param {number} attempt - Attempt index (0-based)
+ * @returns {number} Backoff delay in milliseconds
+ */
+export function getExponentialBackoffMs(baseMs, attempt) {
+    return baseMs * Math.pow(2, attempt);
+}
