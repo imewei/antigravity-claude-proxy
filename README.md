@@ -26,6 +26,11 @@ A proxy server that exposes an **Anthropic-compatible API** backed by **Antigrav
 4. Sends to Antigravity's Cloud Code API
 5. Converts responses back to **Anthropic format** with full thinking/streaming support
 
+### Key Features
+- **Stability**: Built-in support for `AbortController`, ensuring upstream requests are cancelled immediately when you interrupt the client.
+- **Efficiency**: Graceful handling of client disconnects (EPIPE/ECONNRESET) prevents "ghost" requests and saves quota.
+- **Modern**: Fully modernized ES modules architecture using `node:` protocol imports.
+
 ## Prerequisites
 
 - **Node.js** 18 or later

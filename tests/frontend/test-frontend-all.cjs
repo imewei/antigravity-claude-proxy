@@ -5,7 +5,7 @@
  * Run: node tests/frontend/test-frontend-all.cjs
  */
 
-const { execSync, spawn } = require('child_process');
+const { execSync } = require('child_process');
 const path = require('path');
 
 const testFiles = [

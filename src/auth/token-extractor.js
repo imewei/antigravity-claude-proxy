@@ -59,7 +59,7 @@ async function getTokenData() {
             logger.info('[Token] Got fresh token from SQLite database');
             return dbData;
         }
-    } catch (err) {
+    } catch {
         logger.warn('[Token] DB extraction failed, trying HTML page...');
     }
 
@@ -70,7 +70,7 @@ async function getTokenData() {
             logger.warn('[Token] Got token from HTML page (may be stale)');
             return pageData;
         }
-    } catch (err) {
+    } catch (err) { // Keep err here as it is used in the message
         logger.warn(`[Token] HTML page extraction failed: ${err.message}`);
     }
 

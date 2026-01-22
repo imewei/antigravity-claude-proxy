@@ -81,7 +81,7 @@ async function testRecursiveFallback() {
         console.log('  Triggering stream request...');
         const generator = sendMessageStream(request, mockAccountManager, true); // fallbackEnabled=true
 
-        for await (const chunk of generator) {
+        for await (const chunk of generator) { // eslint-disable-line no-unused-vars
             // Consume stream
         }
 

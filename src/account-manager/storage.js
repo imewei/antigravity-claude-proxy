@@ -4,8 +4,7 @@
  * Handles loading and saving account configuration to disk.
  */
 
-import { readFile, writeFile, mkdir, access, rename } from 'node:fs/promises';
-import { constants as fsConstants } from 'node:fs';
+import { writeFile, mkdir, rename } from 'node:fs/promises';
 import path from 'node:path';
 import { logger } from '../utils/logger.js';
 // ...

@@ -31,7 +31,7 @@ try {
     const packageJsonPath = path.join(__dirname, '../../package.json');
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
     packageVersion = packageJson.version;
-} catch (error) {
+} catch {
     logger.warn('[WebUI] Could not read package.json version, using default');
 }
 

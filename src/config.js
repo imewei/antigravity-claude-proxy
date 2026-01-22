@@ -52,7 +52,7 @@ const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 if (!fs.existsSync(CONFIG_DIR)) {
     try {
         fs.mkdirSync(CONFIG_DIR, { recursive: true });
-    } catch (err) {
+    } catch {
         // Ignore
     }
 }

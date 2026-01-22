@@ -119,7 +119,7 @@ const tests = [
         async run() {
             const res = await request('/views/logs.html');
             const levels = ['INFO', 'WARN', 'ERROR', 'SUCCESS', 'DEBUG'];
-            const colors = ['blue-400', 'yellow-400', 'red-500', 'neon-green', 'purple-400'];
+            // const colors = ['blue-400', 'yellow-400', 'red-500', 'neon-green', 'purple-400'];
 
             for (const level of levels) {
                 if (!res.data.includes(`'${level}'`)) {

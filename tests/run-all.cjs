@@ -89,7 +89,7 @@ async function main() {
     let allPassed = true;
     for (const result of results) {
         const status = result.passed ? '✓ PASS' : '✗ FAIL';
-        const statusColor = result.passed ? '' : '';
+        // const statusColor = result.passed ? '' : '';
         console.log(`║ ${status.padEnd(8)} ${result.name.padEnd(50)} ║`);
         if (!result.passed) allPassed = false;
     }

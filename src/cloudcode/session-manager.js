@@ -7,7 +7,6 @@
  */
 
 import crypto from 'node:crypto';
-import fs from 'node:fs';
 
 /**
  * Derive a stable session ID from the first user message in the conversation.

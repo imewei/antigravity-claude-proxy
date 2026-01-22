@@ -39,12 +39,12 @@ export async function listModels(token) {
     const modelList = Object.entries(data.models)
         .filter(([modelId]) => isSupportedModel(modelId))
         .map(([modelId, modelData]) => ({
-        id: modelId,
-        object: 'model',
-        created: Math.floor(Date.now() / 1000),
-        owned_by: 'anthropic',
-        description: modelData.displayName || modelId
-    }));
+            id: modelId,
+            object: 'model',
+            created: Math.floor(Date.now() / 1000),
+            owned_by: 'anthropic',
+            description: modelData.displayName || modelId
+        }));
 
     return {
         object: 'list',
@@ -80,7 +80,7 @@ export async function fetchAvailableModels(token, projectId = null) {
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
+                // const errorText = await response.text();
                 logger.warn(`[CloudCode] fetchAvailableModels error at ${endpoint}: ${response.status}`);
                 continue;
             }

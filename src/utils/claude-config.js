@@ -69,7 +69,7 @@ export async function updateClaudeConfig(updates) {
     const configDir = path.dirname(configPath);
     try {
         await fs.mkdir(configDir, { recursive: true });
-    } catch (error) {
+    } catch {
         // Ignore if exists
     }
 
@@ -98,7 +98,7 @@ export async function replaceClaudeConfig(config) {
     const configDir = path.dirname(configPath);
     try {
         await fs.mkdir(configDir, { recursive: true });
-    } catch (error) {
+    } catch {
         // Ignore if exists
     }
 

@@ -7,8 +7,8 @@
 import { execSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
+// import { createRequire } from 'node:module'; // Unused
+// const require = createRequire(import.meta.url); // Unused
 import { logger } from './logger.js';
 
 /**

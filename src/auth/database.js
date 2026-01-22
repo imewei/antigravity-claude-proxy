@@ -53,7 +53,7 @@ function loadDatabaseModule() {
                     Database = require('better-sqlite3');
                     logger.success('[Database] Module reloaded successfully after rebuild');
                     return Database;
-                } catch (retryError) {
+                } catch {
                     // Rebuild succeeded but reload failed - user needs to restart
                     moduleLoadError = new NativeModuleError(
                         'Native module rebuild completed. Please restart the server to apply the fix.',

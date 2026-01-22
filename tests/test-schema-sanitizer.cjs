@@ -7,7 +7,7 @@
  */
 
 // Import the schema sanitizer functions
-const path = require('path');
+// const path = require('path');
 
 // Since we're in CommonJS and the module is ESM, we need to use dynamic import
 async function runTests() {
@@ -39,11 +39,11 @@ async function runTests() {
         }
     }
 
-    function assertIncludes(actual, substring, message = '') {
-        if (!JSON.stringify(actual).includes(substring)) {
-            throw new Error(`${message}\nExpected to include: ${substring}\nActual: ${JSON.stringify(actual, null, 2)}`);
-        }
-    }
+    // function assertIncludes(actual, substring, message = '') {
+    //     if (!JSON.stringify(actual).includes(substring)) {
+    //         throw new Error(`${message}\nExpected to include: ${substring}\nActual: ${JSON.stringify(actual, null, 2)}`);
+    //     }
+    // }
 
     // Test 1: Basic type conversion to uppercase
     test('Basic type conversion to uppercase', () => {
@@ -99,7 +99,7 @@ async function runTests() {
             }
         };
         const result = cleanSchema(sanitizeSchema(schema));
-        
+
         assertEqual(result.type, 'OBJECT', 'Root type should be OBJECT');
         assertEqual(result.properties.todos.type, 'ARRAY', 'Todos type should be ARRAY');
         assertEqual(result.properties.todos.items.type, 'OBJECT', 'Items type should be OBJECT');
@@ -135,7 +135,7 @@ async function runTests() {
             }
         };
         const result = cleanSchema(sanitizeSchema(schema));
-        
+
         assertEqual(result.type, 'OBJECT');
         assertEqual(result.properties.tasks.type, 'ARRAY');
         assertEqual(result.properties.tasks.items.type, 'OBJECT');
@@ -160,7 +160,7 @@ async function runTests() {
             }
         };
         const result = cleanSchema(schema);
-        
+
         assertEqual(result.type, 'OBJECT');
         // anyOf gets flattened to best option (object type scores highest)
         assertEqual(result.properties.value.type, 'OBJECT');
@@ -177,7 +177,7 @@ async function runTests() {
             }
         };
         const result = cleanSchema(sanitizeSchema(schema));
-        
+
         assertEqual(result.type, 'OBJECT');
         assertEqual(result.properties.optional.type, 'STRING');
     });
@@ -196,7 +196,7 @@ async function runTests() {
             }
         };
         const result = cleanSchema(sanitizeSchema(schema));
-        
+
         assertEqual(result.properties.str.type, 'STRING');
         assertEqual(result.properties.num.type, 'NUMBER');
         assertEqual(result.properties.int.type, 'INTEGER');
@@ -208,7 +208,7 @@ async function runTests() {
     // Test 9: Empty schema gets placeholder with correct types
     test('Empty schema gets placeholder with uppercase types', () => {
         const result = cleanSchema(sanitizeSchema(null));
-        
+
         assertEqual(result.type, 'OBJECT');
         assertEqual(result.properties.reason.type, 'STRING');
     });
@@ -241,9 +241,9 @@ async function runTests() {
             },
             required: ['operation']
         };
-        
+
         const result = cleanSchema(sanitizeSchema(schema));
-        
+
         // Verify all types are uppercase
         assertEqual(result.type, 'OBJECT');
         assertEqual(result.properties.operation.type, 'STRING');
@@ -257,7 +257,7 @@ async function runTests() {
     // Summary
     console.log('\n' + '═'.repeat(60));
     console.log(`Tests completed: ${passed} passed, ${failed} failed`);
-    
+
     if (failed > 0) {
         process.exit(1);
     }

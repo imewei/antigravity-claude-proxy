@@ -64,7 +64,7 @@ node tests/test-strategies.cjs
 
 **Request Flow:**
 ```
-Claude Code CLI → Express Server (server.js) → CloudCode Client → Antigravity Cloud Code API
+Claude Code CLI → Express Server (server.js) → ProxyServer → Route Controller → CloudCode Client → Google API
 ```
 
 **Directory Structure:**
@@ -72,10 +72,18 @@ Claude Code CLI → Express Server (server.js) → CloudCode Client → Antigrav
 ```
 src/
 ├── index.js                    # Entry point
-├── server.js                   # Express server
+├── server.js                   # Express app setup
 ├── constants.js                # Configuration values
 ├── errors.js                   # Custom error classes
 ├── fallback-config.js          # Model fallback mappings and helpers
+│
+├── server/                     # Server Core
+│   ├── ProxyServer.js          # Server lifecycle and middleware management
+│   └── routes/                 # Route Controllers
+│       ├── anthropic.js        # /v1/messages, /v1/models
+│       ├── auth.js             # /refresh-token
+│       ├── health.js           # /health
+│       └── limits.js           # /account-limits
 │
 ├── cloudcode/                  # Cloud Code API client
 │   ├── index.js                # Public API exports
@@ -174,8 +182,9 @@ public/
 
 **Key Modules:**
 
-- **src/server.js**: Express server exposing Anthropic-compatible endpoints (`/v1/messages`, `/v1/models`, `/health`, `/account-limits`) and mounting WebUI
-- **src/webui/index.js**: WebUI backend handling API routes (`/api/*`) for config, accounts, and logs
+- **src/server/ProxyServer.js**: Core server class managing lifecycle, middleware, and route mounting.
+- **src/server.js**: Entry point that instantiates `ProxyServer` and handles signal termination.
+- **src/server/routes/**: Modular route controllers for Anthropic endpoints, Auth, Health, and Limits.
 - **src/cloudcode/**: Cloud Code API client with retry/failover logic, streaming and non-streaming support
   - `model-api.js`: Model listing, quota retrieval (`getModelQuotas()`), and subscription tier detection (`getSubscriptionTier()`)
 - **src/account-manager/**: Multi-account pool with configurable selection strategies, rate limit handling, and automatic cooldown
@@ -291,6 +300,7 @@ Each account object in `accounts.json` contains:
 - Tests require the server to be running (`npm start` in separate terminal)
 - Tests are CommonJS files (`.cjs`) that make HTTP requests to the local proxy
 - Shared test utilities are in `tests/helpers/http-client.cjs`
+- **Mocking**: Integration tests (like `test-recursive-fallback.cjs`) use `fetch` and `AccountManager` mocking to run offline without credentials.
 - Test runner supports filtering: `node tests/run-all.cjs <filter>` to run matching tests
 
 ## Code Organization

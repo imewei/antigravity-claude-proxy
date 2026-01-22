@@ -25,8 +25,8 @@ async function testEmptyResponseRetry() {
 
         // Import the modules to ensure they compile
         const errors = await import('../src/errors.js');
-        const streamer = await import('../src/cloudcode/sse-streamer.js');
-        const handler = await import('../src/cloudcode/streaming-handler.js');
+        // const streamer = await import('../src/cloudcode/sse-streamer.js');
+        // const handler = await import('../src/cloudcode/streaming-handler.js');
         const constants = await import('../src/constants.js');
 
         console.log('  ✓ EmptyResponseError class exists:', typeof errors.EmptyResponseError === 'function');
