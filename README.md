@@ -51,8 +51,14 @@ antigravity-claude-proxy start
 ```bash
 git clone https://github.com/badri-s2001/antigravity-claude-proxy.git
 cd antigravity-claude-proxy
-npm install
+
+# For production/deployment (omits dev tools):
+npm install --omit=dev  
 npm start
+
+# For development (includes css tools):
+# npm install
+# npm run dev
 ```
 
 ---

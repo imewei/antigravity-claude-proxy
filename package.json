@@ -15,7 +15,6 @@
   "scripts": {
     "build:css": "tailwindcss -i ./public/css/src/input.css -o ./public/css/style.css --minify",
     "watch:css": "tailwindcss -i ./public/css/src/input.css -o ./public/css/style.css --watch",
-    "prepare": "npm run build:css",
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "dev:full": "concurrently \"npm run watch:css\" \"npm run dev\"",
@@ -35,7 +34,11 @@
     "test:oauth": "node tests/test-oauth-no-browser.cjs",
     "test:emptyretry": "node tests/test-empty-response-retry.cjs",
     "test:sanitizer": "node tests/test-schema-sanitizer.cjs",
-    "test:strategies": "node tests/test-strategies.cjs"
+    "test:strategies": "node tests/test-strategies.cjs",
+    "lint": "eslint src tests public/js bin",
+    "lint:fix": "eslint src tests public/js bin --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "keywords": [
     "claude",
@@ -68,7 +71,12 @@
     "autoprefixer": "^10.4.16",
     "concurrently": "^8.2.2",
     "daisyui": "^4.12.14",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.0.0",
     "postcss": "^8.4.32",
+    "prettier": "^3.8.1",
     "tailwindcss": "^3.4.0"
   }
 }
