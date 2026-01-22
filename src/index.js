@@ -3,12 +3,12 @@
  * Entry point - starts the proxy server
  */
 
-import app, { accountManager } from './server.js';
+import { proxyServer, accountManager } from './server.js';
 import { DEFAULT_PORT } from './constants.js';
 import { logger } from './utils/logger.js';
-import { getStrategyLabel, STRATEGY_NAMES, DEFAULT_STRATEGY } from './account-manager/strategies/index.js';
-import path from 'path';
-import os from 'os';
+import { STRATEGY_NAMES } from './account-manager/strategies/index.js';
+import path from 'node:path';
+import os from 'node:os';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -41,7 +41,7 @@ if (isFallbackEnabled) {
     logger.info('Model fallback mode enabled');
 }
 
-// Export fallback flag for server to use
+// Export fallback flag
 export const FALLBACK_ENABLED = isFallbackEnabled;
 
 const PORT = process.env.PORT || DEFAULT_PORT;
@@ -50,15 +50,26 @@ const PORT = process.env.PORT || DEFAULT_PORT;
 const HOME_DIR = os.homedir();
 const CONFIG_DIR = path.join(HOME_DIR, '.antigravity-claude-proxy');
 
-const server = app.listen(PORT, () => {
+// Setup and start server
+async function main() {
+    // Setup middleware and routes
+    proxyServer.setup(isFallbackEnabled);
+
+    // Initialize account manager (async, starts in background)
+    proxyServer.initialize(strategyOverride).catch(err => {
+        logger.error('[Startup] Failed to initialize account manager:', err);
+    });
+
+    // Start listening
+    await proxyServer.start(PORT);
+
     // Clear console for a clean start
     console.clear();
 
     const border = '║';
-    // align for 2-space indent (60 chars), align4 for 4-space indent (58 chars)
     const align = (text) => text + ' '.repeat(Math.max(0, 60 - text.length));
     const align4 = (text) => text + ' '.repeat(Math.max(0, 58 - text.length));
-    
+
     // Build Control section dynamically
     const strategyOptions = `(${STRATEGY_NAMES.join('/')})`;
     const strategyLine2 = '                       ' + strategyOptions;
@@ -73,10 +84,10 @@ const server = app.listen(PORT, () => {
     }
     controlSection += '║    Ctrl+C             Stop server                            ║';
 
-    // Get the strategy label (accountManager will be initialized by now)
+    // Get the strategy label
     const strategyLabel = accountManager.getStrategyLabel();
 
-    // Build status section - always show strategy, plus any active modes
+    // Build status section
     let statusSection = '║                                                              ║\n';
     statusSection += '║  Active Modes:                                               ║\n';
     statusSection += `${border}    ${align4(`✓ Strategy: ${strategyLabel}`)}${border}\n`;
@@ -90,8 +101,8 @@ const server = app.listen(PORT, () => {
     logger.log(`
 ╔══════════════════════════════════════════════════════════════╗
 ║           Antigravity Claude Proxy Server                    ║
-╠══════════════════════════════════════════════════════════════╣
-║                                                              ║
+93: ╠══════════════════════════════════════════════════════════════╣
+94: ║                                                              ║
 ${border}  ${align(`Server and WebUI running at: http://localhost:${PORT}`)}${border}
 ${statusSection}║                                                              ║
 ${controlSection}
@@ -119,27 +130,25 @@ ${border}    ${align4(`export ANTHROPIC_BASE_URL=http://localhost:${PORT}`)}${bo
 ║    - Have a chat panel open in Antigravity                   ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
-  `);
-    
+    `);
+
     logger.success(`Server started successfully on port ${PORT}`);
     if (isDebug) {
         logger.warn('Running in DEBUG mode - verbose logs enabled');
     }
+}
+
+main().catch(err => {
+    logger.error('Fatal error starting server:', err);
+    process.exit(1);
 });
 
 // Graceful shutdown
-const shutdown = () => {
+const shutdown = async () => {
     logger.info('Shutting down server...');
-    server.close(() => {
-        logger.success('Server stopped');
-        process.exit(0);
-    });
-
-    // Force close if it takes too long
-    setTimeout(() => {
-        logger.error('Could not close connections in time, forcefully shutting down');
-        process.exit(1);
-    }, 10000);
+    await proxyServer.stop();
+    logger.success('Server stopped');
+    process.exit(0);
 };
 
 process.on('SIGTERM', shutdown);
