@@ -42,7 +42,7 @@ async function fetchAndSaveSubscription(token, account, onSave) {
         if (subscription && subscription.tier !== 'unknown') {
             account.subscription = subscription;
             if (onSave) {
-                await onSave();
+                Promise.resolve(onSave()).catch(e => logger.error(`[Credentials] onSave callback failed: ${e.message}`));
             }
             logger.info(`[AccountManager] Updated subscription tier for ${account.email}: ${subscription.tier}`);
         }
@@ -82,7 +82,8 @@ export async function getTokenForAccount(account, tokenCache, onInvalid, onSave)
             if (account.isInvalid) {
                 account.isInvalid = false;
                 account.invalidReason = null;
-                if (onSave) await onSave();
+                account.invalidReason = null;
+                if (onSave) Promise.resolve(onSave()).catch(e => logger.error(`[Credentials] onSave callback failed (refresh): ${e.message}`));
             }
             logger.success(`[AccountManager] Refreshed OAuth token for: ${account.email}`);
         } catch (error) {

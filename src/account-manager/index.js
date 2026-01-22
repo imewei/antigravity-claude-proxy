@@ -36,6 +36,8 @@ export class AccountManager extends EventEmitter {
     #initialized = false;
     #strategy = null;
     #strategyName = DEFAULT_STRATEGY;
+    #saveTimeout = null;
+    #isSaving = false;
 
     // Per-account caches
     #tokenCache = new Map(); // email -> { token, extractedAt }
@@ -330,9 +332,34 @@ export class AccountManager extends EventEmitter {
      * Save current state to disk (async)
      * @returns {Promise<void>}
      */
+    #saveTimeout = null;
+    #isSaving = false;
+
+    /**
+     * Save current state to disk (async, debounced)
+     * @returns {Promise<void>}
+     */
     async saveToDisk() {
-        await saveAccounts(this.#configPath, this.#accounts, this.#settings, this.#currentIndex);
-        this.emit('update', this.getStatus());
+        if (this.#saveTimeout) {
+            clearTimeout(this.#saveTimeout);
+        }
+
+        return new Promise((resolve, reject) => {
+            this.#saveTimeout = setTimeout(async () => {
+                try {
+                    this.#isSaving = true;
+                    await saveAccounts(this.#configPath, this.#accounts, this.#settings, this.#currentIndex);
+                    this.emit('update', this.getStatus());
+                    resolve();
+                } catch (error) {
+                    logger.error('[AccountManager] Save failed:', error);
+                    reject(error);
+                } finally {
+                    this.#isSaving = false;
+                    this.#saveTimeout = null;
+                }
+            }, 500); // 500ms debounce
+        });
     }
 
     /**

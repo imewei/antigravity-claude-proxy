@@ -4,7 +4,7 @@
  * Handles loading and saving account configuration to disk.
  */
 
-import { readFile, writeFile, mkdir, access } from 'fs/promises';
+import { readFile, writeFile, mkdir, access, rename } from 'fs/promises';
 import { constants as fsConstants } from 'fs';
 import { dirname } from 'path';
 import { ACCOUNT_CONFIG_PATH } from '../constants.js';
@@ -129,7 +129,10 @@ export async function saveAccounts(configPath, accounts, settings, activeIndex) 
             activeIndex: activeIndex
         };
 
-        await writeFile(configPath, JSON.stringify(config, null, 2));
+        // Atomic write: write to .tmp file then rename
+        const tempPath = `${configPath}.tmp`;
+        await writeFile(tempPath, JSON.stringify(config, null, 2));
+        await rename(tempPath, configPath);
     } catch (error) {
         logger.error('[AccountManager] Failed to save config:', error.message);
     }
