@@ -96,10 +96,18 @@ export async function getTokenForAccount(account, tokenCache, onInvalid, onSave)
             }
             logger.success(`[AccountManager] Refreshed OAuth token for: ${account.email}`);
         } catch (error) {
-            // Check if it's a transient network error
-            if (isNetworkError(error)) {
+            const msg = (error.message || '').toLowerCase();
+            const isTransient =
+                isNetworkError(error) ||
+                msg.includes('internal_failure') ||
+                msg.includes('server_error') ||
+                msg.includes('500') ||
+                msg.includes('502') ||
+                msg.includes('503');
+
+            if (isTransient) {
                 logger.warn(
-                    `[AccountManager] Failed to refresh token for ${account.email} due to network error: ${error.message}`
+                    `[AccountManager] Failed to refresh token for ${account.email} due to transient error: ${error.message}`
                 );
                 // Do NOT mark as invalid, just throw so caller knows it failed
                 throw new Error(`AUTH_NETWORK_ERROR: ${error.message}`);
