@@ -3,7 +3,8 @@ import crypto from 'node:crypto';
 
 // Constants
 const MOCK_SIGNATURE = 'mock_signature_longer_than_50_chars_for_validation_purposes_123456789';
-const MOCK_TOOL_SIGNATURE = 'mock_signature_longer_than_50_chars_for_validation_purposes_on_tool_use_9876543210';
+const MOCK_TOOL_SIGNATURE =
+    'mock_signature_longer_than_50_chars_for_validation_purposes_on_tool_use_9876543210';
 
 // Scenarios
 const SCENARIOS = {
@@ -24,7 +25,7 @@ export async function* mockMessageStream(anthropicRequest) {
 
     const lastMessage = anthropicRequest.messages[anthropicRequest.messages.length - 1];
     const content = Array.isArray(lastMessage.content)
-        ? lastMessage.content.map(c => c.text || '').join('')
+        ? lastMessage.content.map((c) => c.text || '').join('')
         : lastMessage.content;
 
     const scenario = detectScenario(content, lastMessage);
@@ -70,8 +71,9 @@ function detectScenario(content, lastMessage) {
     if (lowerContent.includes('step by step')) return SCENARIOS.COMPLEX_TASK;
     if (lowerContent.includes('analyze the src/config.js')) return SCENARIOS.ANALYZE_CONFIG;
 
-    const isToolResult = Array.isArray(lastMessage.content) &&
-        lastMessage.content.some(c => c.type === 'tool_result');
+    const isToolResult =
+        Array.isArray(lastMessage.content) &&
+        lastMessage.content.some((c) => c.type === 'tool_result');
 
     if (isToolResult) return SCENARIOS.TOOL_RESULT;
 
@@ -83,10 +85,14 @@ function detectScenario(content, lastMessage) {
  */
 function getThinkingContent(scenario) {
     switch (scenario) {
-        case SCENARIOS.WEATHER: return "I should check the weather for the user.";
-        case SCENARIOS.RUN_COMMAND: return "I should run the ls -la command.";
-        case SCENARIOS.COMPLEX_TASK: return "I need to read the config file first.";
-        default: return "I am thinking about the response.";
+        case SCENARIOS.WEATHER:
+            return 'I should check the weather for the user.';
+        case SCENARIOS.RUN_COMMAND:
+            return 'I should run the ls -la command.';
+        case SCENARIOS.COMPLEX_TASK:
+            return 'I need to read the config file first.';
+        default:
+            return 'I am thinking about the response.';
     }
 }
 
@@ -96,19 +102,22 @@ function getThinkingContent(scenario) {
 function* emitScenarioContent(blockIndex, scenario) {
     switch (scenario) {
         case SCENARIOS.WEATHER:
-            yield* emitToolUse(blockIndex, 'get_weather', { location: "Paris" });
+            yield* emitToolUse(blockIndex, 'get_weather', { location: 'Paris' });
             break;
 
         case SCENARIOS.RUN_COMMAND:
-            yield* emitToolUse(blockIndex, 'execute_command', { command: "ls -la" });
+            yield* emitToolUse(blockIndex, 'execute_command', { command: 'ls -la' });
             break;
 
         case SCENARIOS.COMPLEX_TASK:
-            yield* emitToolUse(blockIndex, 'read_file', { path: "src/config.js" });
+            yield* emitToolUse(blockIndex, 'read_file', { path: 'src/config.js' });
             break;
 
         case SCENARIOS.ANALYZE_CONFIG:
-            yield* emitTextResponse(blockIndex, 'The config file looks secure enough for development, but debug:true is risky for production.');
+            yield* emitTextResponse(
+                blockIndex,
+                'The config file looks secure enough for development, but debug:true is risky for production.'
+            );
             break;
 
         case SCENARIOS.TOOL_RESULT:

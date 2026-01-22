@@ -1,33 +1,33 @@
 {
-  "accounts": [
-    {
-      "email": "ci-test@example.com",
-      "source": "manual",
-      "enabled": true,
-      "dbPath": null,
-      "apiKey": "dummy_test_token",
-      "projectId": "test-project",
-      "isInvalid": false,
-      "invalidReason": null,
-      "modelRateLimits": {
-        "claude-sonnet-4-5-thinking": {
-          "isRateLimited": false,
-          "resetTime": null
+    "accounts": [
+        {
+            "email": "ci-test@example.com",
+            "source": "manual",
+            "enabled": true,
+            "dbPath": null,
+            "apiKey": "dummy_test_token",
+            "projectId": "test-project",
+            "isInvalid": false,
+            "invalidReason": null,
+            "modelRateLimits": {
+                "claude-sonnet-4-5-thinking": {
+                    "isRateLimited": false,
+                    "resetTime": null
+                }
+            },
+            "lastUsed": 1769096262858,
+            "subscription": {
+                "tier": "free",
+                "projectId": "test-project"
+            },
+            "quota": {
+                "models": {},
+                "lastChecked": null
+            }
         }
-      },
-      "lastUsed": 1769096262858,
-      "subscription": {
-        "tier": "free",
-        "projectId": "test-project"
-      },
-      "quota": {
-        "models": {},
-        "lastChecked": null
-      }
-    }
-  ],
-  "settings": {
-    "strategy": "hybrid"
-  },
-  "activeIndex": 0
+    ],
+    "settings": {
+        "strategy": "hybrid"
+    },
+    "activeIndex": 0
 }
