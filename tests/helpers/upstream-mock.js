@@ -49,6 +49,23 @@ export function createMockServer() {
 function handleRequest(req, res, data) {
     const model = (data.model || '').toLowerCase();
 
+    // Support GCP envelope: { request: { contents: ... } }
+    const reqData = data.request || data;
+
+    // DEBUG: Log received data structure (shallow)
+    // console.log('[Mock] Received data keys:', Object.keys(data));
+    // if (reqData.contents) console.log('[Mock] Contents:', JSON.stringify(reqData.contents, null, 2).substring(0, 500));
+
+    // Extract content from Google API format
+    // Google uses 'contents' array with 'parts', not 'messages'
+    const contents = reqData.contents || [];
+    const lastMsg = contents[contents.length - 1] || {};
+    const contentParts = lastMsg.parts || [];
+
+    // Extract text content for pattern matching triggers
+    const textParts = contentParts.filter(p => p.text).map(p => p.text).join(' ');
+    const content = textParts || '';
+
     // Simulate 429 for Recursive Fallback Test
     if (model.includes('flash-lite') || model === 'gemini-2.5-flash') {
         res.writeHead(429, { 'Content-Type': 'application/json' });
@@ -77,9 +94,25 @@ function handleRequest(req, res, data) {
         res.write(`data: ${JSON.stringify(dataObj)}\n\n`);
     };
 
+    // Simulate Prompt Caching
+    let cachedTokens = 0;
+    // Check system prompt for caching trigger too (test-caching-streaming.cjs uses system prompt)
+    // Google format uses 'system_instruction' object with parts
+    const systemInstruction = reqData.system_instruction || {};
+    const systemParts = (systemInstruction.parts || []).filter(p => p.text).map(p => p.text).join(' ');
+    const systemPrompt = systemParts || '';
+
+    if (content.includes('cache') || content.includes('system') || content.length > 500 || systemPrompt.length > 500) {
+        cachedTokens = 200;
+    }
+
+    // Simulate Image Input
+    // Check if any message part has 'inlineData' or 'fileData' (Google format)
+    const hasImage = contents.some(m =>
+        (m.parts || []).some(p => p.inlineData || p.fileData)
+    );
+
     // Simulate Thinking/Signatures if requested
-    // "Thinking Signatures" test checks for signatures.
-    // We detect if it's a thinking model test.
     const isThinking = model.includes('thinking') || model.includes('gemini');
 
     const parts = [];
@@ -94,13 +127,12 @@ function handleRequest(req, res, data) {
         });
     }
 
-    // Add normal text response (or tool match if requested)
-    // Check if user asked about weather (for tool test)
-    const messages = data.messages || [];
-    const lastMsg = messages[messages.length - 1] || {};
-    const content = JSON.stringify(lastMsg.content || '');
+    // Check for multi-turn weather message or tool results
+    const lastUserMsg = contents.filter(m => m.role === 'user').pop();
+    // Check if the last part is a functionResponse (tool result)
+    const hasToolResult = lastUserMsg && Array.isArray(lastUserMsg.parts) && lastUserMsg.parts.some(c => c.functionResponse || c.tool_result);
 
-    if (content.includes('weather')) {
+    if (content.includes('weather') && !hasToolResult) {
         // Return tool call
         parts.push({
             functionCall: {
@@ -108,6 +140,53 @@ function handleRequest(req, res, data) {
                 args: { location: 'Paris' }
             },
             thoughtSignature: isThinking ? 't'.repeat(60) : undefined
+        });
+    } else if (content.includes('package.json') && !hasToolResult) {
+        // TURN 1 of File Test: Search files
+        parts.push({
+            functionCall: {
+                name: 'search_files',
+                args: { path: '.', pattern: 'package.json' }
+            },
+            thoughtSignature: isThinking ? 't'.repeat(60) : undefined
+        });
+    } else if (content.includes('ls -la') && !hasToolResult) {
+        // TURN 1 of Streaming Test: Run command
+        parts.push({
+            functionCall: {
+                name: 'execute_command',
+                args: { command: 'ls -la' }
+            },
+            thoughtSignature: isThinking ? 't'.repeat(60) : undefined
+        });
+    } else if (hasToolResult) {
+        // Check what the tool result was
+        const toolResults = lastUserMsg.parts.filter(c => c.functionResponse || c.tool_result);
+        const resultText = JSON.stringify(toolResults);
+
+        if (resultText.includes('Found files')) {
+            // TURN 2 of File Test: Read file
+            parts.push({
+                functionCall: {
+                    name: 'read_file',
+                    args: { path: '/project/package.json' }
+                },
+                thoughtSignature: isThinking ? 't'.repeat(60) : undefined
+            });
+        } else if (resultText.includes('total 32')) {
+            // TURN 2 of Streaming Test: Final answer after ls -la
+            parts.push({
+                text: 'The directory contains package.json and README.md.'
+            });
+        } else {
+            // TURN 3 of File Test or Weather Test: Final Answer
+            parts.push({
+                text: 'The package.json contains express and cors dependencies.'
+            });
+        }
+    } else if (hasImage) {
+        parts.push({
+            text: 'I see the image.'
         });
     } else {
         parts.push({
@@ -123,11 +202,14 @@ function handleRequest(req, res, data) {
                 usageMetadata: {
                     promptTokenCount: 10,
                     candidatesTokenCount: 10,
-                    cachedContentTokenCount: 0
+                    cachedContentTokenCount: cachedTokens
                 }
             }
         ]
     };
+
+    // Debug logging
+    // console.log(`[Mock] Handled request. Model: ${model}. Trigger: ${content.substring(0, 50)}... -> ${parts.map(p => p.functionCall ? 'Tool:' + p.functionCall.name : 'Text').join(',')}`);
 
     sendEvent(responsePayload);
     res.end();
