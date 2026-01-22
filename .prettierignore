@@ -1,0 +1,4 @@
+node_modules
+public/css/style.css
+coverage
+package-lock.json
