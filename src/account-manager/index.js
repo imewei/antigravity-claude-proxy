@@ -4,6 +4,7 @@
  * automatic failover, and smart cooldown for rate-limited accounts.
  */
 
+import { EventEmitter } from 'events';
 import { ACCOUNT_CONFIG_PATH } from '../constants.js';
 import { loadAccounts, loadDefaultAccount, saveAccounts } from './storage.js';
 import {
@@ -27,7 +28,7 @@ import { createStrategy, getStrategyLabel, DEFAULT_STRATEGY } from './strategies
 import { logger } from '../utils/logger.js';
 import { config } from '../config.js';
 
-export class AccountManager {
+export class AccountManager extends EventEmitter {
     #accounts = [];
     #currentIndex = 0;
     #configPath;
@@ -41,6 +42,7 @@ export class AccountManager {
     #projectCache = new Map(); // email -> projectId
 
     constructor(configPath = ACCOUNT_CONFIG_PATH, strategyName = null) {
+        super();
         this.#configPath = configPath;
         // Strategy name can be set at construction or later via initialize
         if (strategyName) {
@@ -93,6 +95,7 @@ export class AccountManager {
         this.#initialized = false;
         await this.initialize();
         logger.info('[AccountManager] Accounts reloaded from disk');
+        this.emit('update', this.getStatus());
     }
 
     /**
@@ -137,6 +140,8 @@ export class AccountManager {
         const cleared = clearLimits(this.#accounts);
         if (cleared > 0) {
             this.saveToDisk();
+            // saveToDisk emits update, but if we want to be granular we can emit here too
+            // relying on saveToDisk is sufficient
         }
         return cleared;
     }
@@ -148,6 +153,7 @@ export class AccountManager {
      */
     resetAllRateLimits() {
         resetLimits(this.#accounts);
+        this.emit('update', this.getStatus()); // State change in memory only
     }
 
     /**
@@ -282,6 +288,9 @@ export class AccountManager {
      * @throws {Error} If token refresh fails
      */
     async getTokenForAccount(account) {
+        // If we successfully get a token, it might be a good time to clear invalid status if it was invalid
+        // But credentials.js doesn't update the account object directly on success.
+        // We'll rely on the caller to handle success/failure logic if needed.
         return fetchToken(
             account,
             this.#tokenCache,
@@ -323,6 +332,7 @@ export class AccountManager {
      */
     async saveToDisk() {
         await saveAccounts(this.#configPath, this.#accounts, this.#settings, this.#currentIndex);
+        this.emit('update', this.getStatus());
     }
 
     /**
@@ -353,6 +363,8 @@ export class AccountManager {
                 enabled: a.enabled !== false,  // Default to true if undefined
                 projectId: a.projectId || null,
                 modelRateLimits: a.modelRateLimits || {},
+                limits: a.limits || {}, // Include quota info if available in memory
+                subscription: a.subscription || {}, // Include subscription tier
                 isInvalid: a.isInvalid || false,
                 invalidReason: a.invalidReason || null,
                 lastUsed: a.lastUsed

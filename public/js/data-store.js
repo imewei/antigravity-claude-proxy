@@ -41,7 +41,7 @@ document.addEventListener('alpine:init', () => {
             // Watch filters to recompute
             // Alpine stores don't have $watch automatically unless inside a component?
             // We can manually call compute when filters change.
-            
+
             // Start health check monitoring
             this.startHealthCheck();
         },
@@ -66,7 +66,7 @@ document.addEventListener('alpine:init', () => {
                         this.models = data.models;
                         this.modelConfig = data.modelConfig || {};
                         this.usageHistory = data.usageHistory || {};
-                        
+
                         // Don't show loading on initial load if we have cache
                         this.initialLoad = false;
                         this.computeQuotaRows();
@@ -140,12 +140,12 @@ document.addEventListener('alpine:init', () => {
             try {
                 // Get password from global store
                 const password = Alpine.store('global').webuiPassword;
-                
+
                 // Use lightweight endpoint (no quota fetching)
                 const { response, newPassword } = await window.utils.request('/api/config', {}, password);
-                
+
                 if (newPassword) Alpine.store('global').webuiPassword = newPassword;
-                
+
                 if (response.ok) {
                     this.connectionStatus = 'connected';
                 } else {
@@ -168,33 +168,110 @@ document.addEventListener('alpine:init', () => {
                 this._healthVisibilitySetup = true;
                 this._visibilityHandler = () => {
                     if (document.hidden) {
-                        // Tab hidden - stop health checks
-                        this.stopHealthCheck();
+                        // Tab hidden - stop health checks / close SSE
+                        this.disconnectSSE();
                     } else {
-                        // Tab visible - restart health checks
-                        this.startHealthCheck();
+                        // Tab visible - restart health checks / connect SSE
+                        this.connectSSE();
                     }
                 };
                 document.addEventListener('visibilitychange', this._visibilityHandler);
             }
 
-            // Perform immediate health check
-            this.performHealthCheck();
-
-            // Schedule regular health checks every 15 seconds
-            this.healthCheckTimer = setInterval(() => {
-                // Only perform health check if tab is visible
-                if (!document.hidden) {
-                    this.performHealthCheck();
-                }
-            }, 15000);
+            // Start SSE connection
+            this.connectSSE();
         },
 
         stopHealthCheck() {
-            if (this.healthCheckTimer) {
-                clearInterval(this.healthCheckTimer);
-                this.healthCheckTimer = null;
+            this.disconnectSSE();
+        },
+
+        connectSSE() {
+            if (this.sseSource) return;
+
+            // Connect to SSE stream
+            // Include history to match initial fetch behavior logic if needed, 
+            // though usually history is fetched once. The stream provides status updates.
+            this.sseSource = new EventSource('/api/accounts/stream');
+
+            this.sseSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                this.handleServerUpdate(data);
+                this.connectionStatus = 'connected';
+            };
+
+            this.sseSource.onerror = () => {
+                this.connectionStatus = 'disconnected';
+                // EventSource auto-reconnects, but we can track state here
+                // If it fails permanently, we might want to manually retry or fallback
+            };
+
+            this.connectionStatus = 'connecting';
+        },
+
+        disconnectSSE() {
+            if (this.sseSource) {
+                this.sseSource.close();
+                this.sseSource = null;
             }
+        },
+
+        handleServerUpdate(statusData) {
+            // Merge status data into local accounts
+            // statusData structure matches accountManager.getStatus()
+
+            // Map accounts by email for easy lookup
+            const statusMap = new Map(statusData.accounts.map(a => [a.email, a]));
+
+            // Update existing accounts in place to preserve object references where possible
+            // or replace if structure differs significantly.
+            // Since we use Alpine, reactivity is key.
+
+            // Note: The SSE status data currently is metadata + limits relative to "getStatus()"
+            // It might NOT include the deep quota info that "getQuotaRows" needs (from /account-limits).
+            // However, implementation_plan says we should use SSE.
+            // If getStatus() doesn't have deep quota info, we might still need to fetch details,
+            // OR we update AccountManager to include everything in getStatus().
+            // Looking at AccountManager.getStatus implementation:
+            // It includes: source, enabled, projectId, modelRateLimits, isInvalid, invalidReason.
+            // It does NOT include detailed per-model remaining percentages (fetched via API calls in /account-limits).
+
+            // Critical decision: 
+            // 1. Fetch /account-limits on every SSE update (triggered by SSE).
+            // 2. Or assume SSE update is enough for "status" (green/red) but not "quota %".
+
+            // Given the goal is "Real-time account updates", we want everything.
+            // But fetching /account-limits constantly is heavy.
+            // Let's trigger a lightweight fetch or just update the metadata for now,
+            // and maybe debounce a full fetch.
+
+            // Actually, for "efficiency", replacing polling with "poll on event" is still better than "poll every X".
+            // So if an event comes, we fetch fresh data.
+            // Even better: if the event contained the data. 
+            // But calculating detailed quotas requires API calls to Google (slow).
+            // accounts.json updates (from saveToDisk) happen on rate limits.
+
+            // Strategy:
+            // 1. Update metadata (enabled/disabled/rate-limited status) immediately from event.
+            // 2. Trigger a debounced background fetch of full quotas if something significant changed.
+
+            // Update metadata
+            this.accounts.forEach(acc => {
+                const update = statusMap.get(acc.email);
+                if (update) {
+                    acc.enabled = update.enabled;
+                    acc.isInvalid = update.isInvalid;
+                    acc.invalidReason = update.invalidReason;
+                    acc.modelRateLimits = update.modelRateLimits;
+                    // If we have subscription data in event, update it
+                    if (update.subscription) acc.subscription = update.subscription;
+                }
+            });
+
+            // Calculate computed rows (visibility, etc) based on metadata
+            this.computeQuotaRows();
+
+            this.lastUpdated = new Date().toLocaleTimeString();
         },
 
         computeQuotaRows() {
@@ -287,7 +364,7 @@ document.addEventListener('alpine:init', () => {
 
             this.quotaRows = rows.sort((a, b) => {
                 if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-                
+
                 let valA = a[sortCol];
                 let valB = b[sortCol];
 

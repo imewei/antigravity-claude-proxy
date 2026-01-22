@@ -260,6 +260,35 @@ export function mountWebUI(app, dirname, accountManager) {
         }
     });
 
+    /**
+     * GET /api/accounts/stream - Stream account updates via SSE
+     */
+    app.get('/api/accounts/stream', (req, res) => {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        // Send initial state
+        const initialStatus = accountManager.getStatus();
+        res.write(`data: ${JSON.stringify(initialStatus)}\n\n`);
+
+        // Subscribe to updates
+        const onUpdate = (status) => {
+            res.write(`data: ${JSON.stringify(status)}\n\n`);
+        };
+
+        if (accountManager.on) {
+            accountManager.on('update', onUpdate);
+        }
+
+        // Cleanup on disconnect
+        req.on('close', () => {
+            if (accountManager.off) {
+                accountManager.off('update', onUpdate);
+            }
+        });
+    });
+
     // ==========================================
     // Configuration API
     // ==========================================
