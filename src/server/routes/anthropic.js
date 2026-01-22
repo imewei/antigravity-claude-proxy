@@ -78,14 +78,50 @@ export function createAnthropicRouter({
      * Count tokens endpoint - Anthropic Messages API compatible
      */
     router.post('/messages/count_tokens', (req, res) => {
-        res.status(501).json({
-            type: 'error',
-            error: {
-                type: 'not_implemented',
-                message:
-                    'Token counting is not implemented. Use /v1/messages with max_tokens or configure your client to skip token counting.'
+        try {
+            const { messages, system } = req.body;
+            let totalChars = 0;
+
+            // Count system prompt
+            if (system) {
+                if (typeof system === 'string') totalChars += system.length;
+                else if (Array.isArray(system)) {
+                    totalChars += system
+                        .filter((p) => p.text)
+                        .reduce((acc, p) => acc + p.text.length, 0);
+                }
             }
-        });
+
+            // Count messages
+            if (messages && Array.isArray(messages)) {
+                for (const msg of messages) {
+                    if (typeof msg.content === 'string') {
+                        totalChars += msg.content.length;
+                    } else if (Array.isArray(msg.content)) {
+                        for (const part of msg.content) {
+                            if (part.type === 'text' && part.text) {
+                                totalChars += part.text.length;
+                            } else if (part.type === 'image' && part.source?.data) {
+                                // Rough estimate for base64 image: 1000 tokens per image?
+                                // Cloud Code doesn't "count" image tokens the same way, but let's be conservative
+                                totalChars += 1000 * 3.5;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Heuristic: ~3.5 chars per token for code/text mix
+            const estimatedTokens = Math.ceil(totalChars / 3.5);
+
+            res.json({ input_tokens: estimatedTokens });
+        } catch (error) {
+            logger.error('[API] Error in count_tokens heuristic:', error);
+            res.status(500).json({
+                type: 'error',
+                error: { type: 'api_error', message: 'Failed to count tokens' }
+            });
+        }
     });
 
     /**
