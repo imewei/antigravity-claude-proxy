@@ -12,7 +12,7 @@ window.Validators = window.Validators || {};
  * @param {string} fieldName - Name of the field for error messages
  * @returns {object} { isValid: boolean, value: number, error: string|null }
  */
-window.Validators.validateRange = function(value, min, max, fieldName = 'Value') {
+window.Validators.validateRange = function (value, min, max, fieldName = 'Value') {
     const numValue = Number(value);
     const t = Alpine.store('global').t;
 
@@ -54,9 +54,14 @@ window.Validators.validateRange = function(value, min, max, fieldName = 'Value')
  * @param {number} maxMs - Maximum allowed timeout (default: from constants)
  * @returns {object} { isValid: boolean, value: number, error: string|null }
  */
-window.Validators.validateTimeout = function(value, minMs = null, maxMs = null) {
+window.Validators.validateTimeout = function (value, minMs = null, maxMs = null) {
     const { TIMEOUT_MIN, TIMEOUT_MAX } = window.AppConstants.VALIDATION;
-    return window.Validators.validateRange(value, minMs ?? TIMEOUT_MIN, maxMs ?? TIMEOUT_MAX, 'Timeout');
+    return window.Validators.validateRange(
+        value,
+        minMs ?? TIMEOUT_MIN,
+        maxMs ?? TIMEOUT_MAX,
+        'Timeout'
+    );
 };
 
 /**
@@ -66,7 +71,7 @@ window.Validators.validateTimeout = function(value, minMs = null, maxMs = null) 
  * @param {boolean} showError - Whether to show error toast (default: true)
  * @returns {object} Validation result
  */
-window.Validators.validate = function(value, validator, showError = true) {
+window.Validators.validate = function (value, validator, showError = true) {
     const result = validator(value);
 
     if (!result.isValid && showError && result.error) {

@@ -54,7 +54,7 @@ document.addEventListener('alpine:init', () => {
                     const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
                     // Check TTL
-                    if (data.timestamp && (Date.now() - data.timestamp > CACHE_TTL)) {
+                    if (data.timestamp && Date.now() - data.timestamp > CACHE_TTL) {
                         console.log('Cache expired, skipping restoration');
                         localStorage.removeItem('ag_data_cache');
                         return;
@@ -142,7 +142,11 @@ document.addEventListener('alpine:init', () => {
                 const password = Alpine.store('global').webuiPassword;
 
                 // Use lightweight endpoint (no quota fetching)
-                const { response, newPassword } = await window.utils.request('/api/config', {}, password);
+                const { response, newPassword } = await window.utils.request(
+                    '/api/config',
+                    {},
+                    password
+                );
 
                 if (newPassword) Alpine.store('global').webuiPassword = newPassword;
 
@@ -190,7 +194,7 @@ document.addEventListener('alpine:init', () => {
             if (this.sseSource) return;
 
             // Connect to SSE stream
-            // Include history to match initial fetch behavior logic if needed, 
+            // Include history to match initial fetch behavior logic if needed,
             // though usually history is fetched once. The stream provides status updates.
             this.sseSource = new EventSource('/api/accounts/stream');
 
@@ -221,7 +225,7 @@ document.addEventListener('alpine:init', () => {
             // statusData structure matches accountManager.getStatus()
 
             // Map accounts by email for easy lookup
-            const statusMap = new Map(statusData.accounts.map(a => [a.email, a]));
+            const statusMap = new Map(statusData.accounts.map((a) => [a.email, a]));
 
             // Update existing accounts in place to preserve object references where possible
             // or replace if structure differs significantly.
@@ -236,7 +240,7 @@ document.addEventListener('alpine:init', () => {
             // It includes: source, enabled, projectId, modelRateLimits, isInvalid, invalidReason.
             // It does NOT include detailed per-model remaining percentages (fetched via API calls in /account-limits).
 
-            // Critical decision: 
+            // Critical decision:
             // 1. Fetch /account-limits on every SSE update (triggered by SSE).
             // 2. Or assume SSE update is enough for "status" (green/red) but not "quota %".
 
@@ -247,7 +251,7 @@ document.addEventListener('alpine:init', () => {
 
             // Actually, for "efficiency", replacing polling with "poll on event" is still better than "poll every X".
             // So if an event comes, we fetch fresh data.
-            // Even better: if the event contained the data. 
+            // Even better: if the event contained the data.
             // But calculating detailed quotas requires API calls to Google (slow).
             // accounts.json updates (from saveToDisk) happen on rate limits.
 
@@ -256,7 +260,7 @@ document.addEventListener('alpine:init', () => {
             // 2. Trigger a debounced background fetch of full quotas if something significant changed.
 
             // Update metadata
-            this.accounts.forEach(acc => {
+            this.accounts.forEach((acc) => {
                 const update = statusMap.get(acc.email);
                 if (update) {
                     acc.enabled = update.enabled;
@@ -279,7 +283,7 @@ document.addEventListener('alpine:init', () => {
             const rows = [];
             const showExhausted = Alpine.store('settings')?.showExhausted ?? true;
 
-            models.forEach(modelId => {
+            models.forEach((modelId) => {
                 // Config
                 const config = this.modelConfig[modelId] || {};
                 const family = this.getModelFamily(modelId);
@@ -291,7 +295,7 @@ document.addEventListener('alpine:init', () => {
                 // Note: To manage hidden models, use Settings → Models tab
                 let isHidden = config.hidden;
                 if (isHidden === undefined) {
-                    isHidden = (family === 'other' || family === 'unknown');
+                    isHidden = family === 'other' || family === 'unknown';
                 }
 
                 // Models Page: Check settings for visibility
@@ -313,20 +317,27 @@ document.addEventListener('alpine:init', () => {
                 let validAccountCount = 0;
                 let minResetTime = null;
 
-                this.accounts.forEach(acc => {
-                    if (this.filters.account !== 'all' && acc.email !== this.filters.account) return;
+                this.accounts.forEach((acc) => {
+                    if (this.filters.account !== 'all' && acc.email !== this.filters.account)
+                        return;
 
                     const limit = acc.limits?.[modelId];
                     if (!limit) return;
 
-                    const pct = limit.remainingFraction !== null ? Math.round(limit.remainingFraction * 100) : 0;
+                    const pct =
+                        limit.remainingFraction !== null
+                            ? Math.round(limit.remainingFraction * 100)
+                            : 0;
                     minQuota = Math.min(minQuota, pct);
 
                     // Accumulate for average
                     totalQuotaSum += pct;
                     validAccountCount++;
 
-                    if (limit.resetTime && (!minResetTime || new Date(limit.resetTime) < new Date(minResetTime))) {
+                    if (
+                        limit.resetTime &&
+                        (!minResetTime || new Date(limit.resetTime) < new Date(minResetTime))
+                    ) {
                         minResetTime = limit.resetTime;
                     }
 
@@ -339,7 +350,8 @@ document.addEventListener('alpine:init', () => {
                 });
 
                 if (quotaInfo.length === 0) return;
-                const avgQuota = validAccountCount > 0 ? Math.round(totalQuotaSum / validAccountCount) : 0;
+                const avgQuota =
+                    validAccountCount > 0 ? Math.round(totalQuotaSum / validAccountCount) : 0;
 
                 if (!showExhausted && minQuota === 0) return;
 
@@ -354,7 +366,7 @@ document.addEventListener('alpine:init', () => {
                     quotaInfo,
                     pinned: !!config.pinned,
                     hidden: !!isHidden, // Use computed visibility
-                    activeCount: quotaInfo.filter(q => q.pct > 0).length
+                    activeCount: quotaInfo.filter((q) => q.pct > 0).length
                 });
             });
 
@@ -415,23 +427,26 @@ document.addEventListener('alpine:init', () => {
             const rows = [];
             const showHidden = Alpine.store('settings')?.showHiddenModels ?? false;
 
-            models.forEach(modelId => {
+            models.forEach((modelId) => {
                 const config = this.modelConfig[modelId] || {};
                 const family = this.getModelFamily(modelId);
 
                 // Smart visibility (same logic as computeQuotaRows)
                 let isHidden = config.hidden;
                 if (isHidden === undefined) {
-                    isHidden = (family === 'other' || family === 'unknown');
+                    isHidden = family === 'other' || family === 'unknown';
                 }
                 if (isHidden && !showHidden) return;
 
                 const quotaInfo = [];
                 // Use ALL accounts (no account filter)
-                this.accounts.forEach(acc => {
+                this.accounts.forEach((acc) => {
                     const limit = acc.limits?.[modelId];
                     if (!limit) return;
-                    const pct = limit.remainingFraction !== null ? Math.round(limit.remainingFraction * 100) : 0;
+                    const pct =
+                        limit.remainingFraction !== null
+                            ? Math.round(limit.remainingFraction * 100)
+                            : 0;
                     quotaInfo.push({ pct });
                 });
 

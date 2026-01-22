@@ -18,7 +18,10 @@ function getAntigravityDbPath() {
     const home = homedir();
     switch (platform()) {
         case 'darwin':
-            return join(home, 'Library/Application Support/Antigravity/User/globalStorage/state.vscdb');
+            return join(
+                home,
+                'Library/Application Support/Antigravity/User/globalStorage/state.vscdb'
+            );
         case 'win32':
             return join(home, 'AppData/Roaming/Antigravity/User/globalStorage/state.vscdb');
         default: // linux, freebsd, etc.
@@ -59,10 +62,7 @@ export const ANTIGRAVITY_HEADERS = {
 
 // Endpoint order for loadCodeAssist (prod first)
 // loadCodeAssist works better on prod for fresh/unprovisioned accounts
-export const LOAD_CODE_ASSIST_ENDPOINTS = [
-    ANTIGRAVITY_ENDPOINT_PROD,
-    ANTIGRAVITY_ENDPOINT_DAILY
-];
+export const LOAD_CODE_ASSIST_ENDPOINTS = [ANTIGRAVITY_ENDPOINT_PROD, ANTIGRAVITY_ENDPOINT_DAILY];
 
 // Endpoint order for onboardUser (same as generateContent fallbacks)
 export const ONBOARD_USER_ENDPOINTS = ANTIGRAVITY_ENDPOINT_FALLBACKS;
@@ -74,28 +74,23 @@ export const LOAD_CODE_ASSIST_HEADERS = ANTIGRAVITY_HEADERS;
 export const DEFAULT_PROJECT_ID = 'rising-fact-p41fc';
 
 // Configurable constants - values from config.json take precedence
-export const TOKEN_REFRESH_INTERVAL_MS = config?.tokenCacheTtlMs || (5 * 60 * 1000); // From config or 5 minutes
+export const TOKEN_REFRESH_INTERVAL_MS = config?.tokenCacheTtlMs || 5 * 60 * 1000; // From config or 5 minutes
 export const REQUEST_BODY_LIMIT = config?.requestBodyLimit || '50mb';
 export const ANTIGRAVITY_AUTH_PORT = 9092;
 export const DEFAULT_PORT = config?.port || 8080;
 
 // Multi-account configuration
-export const ACCOUNT_CONFIG_PATH = config?.accountConfigPath || join(
-    homedir(),
-    '.config/antigravity-proxy/accounts.json'
-);
+export const ACCOUNT_CONFIG_PATH =
+    config?.accountConfigPath || join(homedir(), '.config/antigravity-proxy/accounts.json');
 
 // Usage history persistence path
-export const USAGE_HISTORY_PATH = join(
-    homedir(),
-    '.config/antigravity-proxy/usage-history.json'
-);
+export const USAGE_HISTORY_PATH = join(homedir(), '.config/antigravity-proxy/usage-history.json');
 
 // Antigravity app database path (for legacy single-account token extraction)
 // Uses platform-specific path detection
 export const ANTIGRAVITY_DB_PATH = getAntigravityDbPath();
 
-export const DEFAULT_COOLDOWN_MS = config?.defaultCooldownMs || (10 * 1000); // From config or 10 seconds
+export const DEFAULT_COOLDOWN_MS = config?.defaultCooldownMs || 10 * 1000; // From config or 10 seconds
 export const MAX_RETRIES = config?.maxRetries || 5; // From config or 5
 export const MAX_EMPTY_RESPONSE_RETRIES = 2; // Max retries for empty API responses (from upstream)
 export const MAX_ACCOUNTS = config?.maxAccounts || 10; // From config or 10
@@ -123,9 +118,9 @@ export const DEFAULT_SELECTION_STRATEGY = 'hybrid';
 
 // Strategy display labels
 export const STRATEGY_LABELS = {
-    'sticky': 'Sticky (Cache Optimized)',
+    sticky: 'Sticky (Cache Optimized)',
     'round-robin': 'Round Robin (Load Balanced)',
-    'hybrid': 'Hybrid (Smart Distribution)'
+    hybrid: 'Hybrid (Smart Distribution)'
 };
 
 // Gemini-specific limits

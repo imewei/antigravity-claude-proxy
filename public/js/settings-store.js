@@ -26,7 +26,7 @@ document.addEventListener('alpine:init', () => {
             const saved = localStorage.getItem('antigravity_settings');
             if (saved) {
                 const parsed = JSON.parse(saved);
-                Object.keys(parsed).forEach(k => {
+                Object.keys(parsed).forEach((k) => {
                     // Only load keys that exist in our default state (safety)
                     if (Object.prototype.hasOwnProperty.call(this, k)) this[k] = parsed[k];
                 });

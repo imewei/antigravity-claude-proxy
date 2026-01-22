@@ -13,16 +13,20 @@ const BASE_URL = process.env.TEST_BASE_URL || `http://localhost:${process.env.PO
 function request(path, options = {}) {
     return new Promise((resolve, reject) => {
         const url = new URL(path, BASE_URL);
-        const req = http.request(url, {
-            method: options.method || 'GET',
-            headers: options.headers || {}
-        }, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                resolve({ status: res.statusCode, data, headers: res.headers });
-            });
-        });
+        const req = http.request(
+            url,
+            {
+                method: options.method || 'GET',
+                headers: options.headers || {}
+            },
+            (res) => {
+                let data = '';
+                res.on('data', (chunk) => (data += chunk));
+                res.on('end', () => {
+                    resolve({ status: res.statusCode, data, headers: res.headers });
+                });
+            }
+        );
         req.on('error', reject);
         if (options.body) req.write(JSON.stringify(options.body));
         req.end();
@@ -71,14 +75,14 @@ const tests = [
             const html = res.data;
 
             const requiredElements = [
-                'totalAccounts',      // Total accounts stat
-                'stats.total',        // Total stat binding
-                'stats.active',       // Active stat binding
-                'stats.limited',      // Limited stat binding
-                'quotaChart'          // Chart canvas
+                'totalAccounts', // Total accounts stat
+                'stats.total', // Total stat binding
+                'stats.active', // Active stat binding
+                'stats.limited', // Limited stat binding
+                'quotaChart' // Chart canvas
             ];
 
-            const missing = requiredElements.filter(el => !html.includes(el));
+            const missing = requiredElements.filter((el) => !html.includes(el));
             if (missing.length > 0) {
                 throw new Error(`Missing elements: ${missing.join(', ')}`);
             }
@@ -92,13 +96,13 @@ const tests = [
             const html = res.data;
 
             const filterElements = [
-                'filters.account',    // Account filter
-                'filters.family',     // Model family filter
-                'filters.search',     // Search input
-                'computeQuotaRows'    // Filter action
+                'filters.account', // Account filter
+                'filters.family', // Model family filter
+                'filters.search', // Search input
+                'computeQuotaRows' // Filter action
             ];
 
-            const missing = filterElements.filter(el => !html.includes(el));
+            const missing = filterElements.filter((el) => !html.includes(el));
             if (missing.length > 0) {
                 throw new Error(`Missing filter elements: ${missing.join(', ')}`);
             }
@@ -112,13 +116,13 @@ const tests = [
             const html = res.data;
 
             const columns = [
-                'modelIdentity',      // Model name column
-                'globalQuota',        // Quota column
-                'nextReset',          // Reset time column
-                'distribution'        // Account distribution column
+                'modelIdentity', // Model name column
+                'globalQuota', // Quota column
+                'nextReset', // Reset time column
+                'distribution' // Account distribution column
             ];
 
-            const missing = columns.filter(col => !html.includes(col));
+            const missing = columns.filter((col) => !html.includes(col));
             if (missing.length > 0) {
                 throw new Error(`Missing table columns: ${missing.join(', ')}`);
             }
@@ -154,7 +158,7 @@ async function runTests() {
     process.exit(failed > 0 ? 1 : 0);
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
     console.error('Test runner failed:', err);
     process.exit(1);
 });

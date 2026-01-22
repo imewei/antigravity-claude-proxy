@@ -63,6 +63,7 @@ node tests/test-strategies.cjs
 ## Architecture
 
 **Request Flow:**
+
 ```
 Claude Code CLI → Express Server (server.js) → ProxyServer → Route Controller → CloudCode Client → Google API
 ```
@@ -186,9 +187,9 @@ public/
 - **src/server.js**: Entry point that instantiates `ProxyServer` and handles signal termination.
 - **src/server/routes/**: Modular route controllers for Anthropic endpoints, Auth, Health, and Limits.
 - **src/cloudcode/**: Cloud Code API client with retry/failover logic, streaming and non-streaming support
-  - `model-api.js`: Model listing, quota retrieval (`getModelQuotas()`), and subscription tier detection (`getSubscriptionTier()`)
+    - `model-api.js`: Model listing, quota retrieval (`getModelQuotas()`), and subscription tier detection (`getSubscriptionTier()`)
 - **src/account-manager/**: Multi-account pool with configurable selection strategies, rate limit handling, and automatic cooldown
-  - Strategies: `sticky` (cache-optimized), `round-robin` (load-balanced), `hybrid` (smart distribution)
+    - Strategies: `sticky` (cache-optimized), `round-robin` (load-balanced), `hybrid` (smart distribution)
 - **src/auth/**: Authentication including Google OAuth, token extraction, database access, and auto-rebuild of native modules
 - **src/format/**: Format conversion between Anthropic and Google Generative AI formats
 - **src/constants.js**: API endpoints, model mappings, fallback config, OAuth config, and all configuration values
@@ -197,11 +198,12 @@ public/
 - **src/errors.js**: Custom error classes (`RateLimitError`, `AuthError`, `ApiError`, etc.)
 
 **Multi-Account Load Balancing:**
+
 - Configurable selection strategy via `--strategy` flag or WebUI
 - Three strategies available:
-  - **Sticky** (`--strategy=sticky`): Best for prompt caching, stays on same account
-  - **Round-Robin** (`--strategy=round-robin`): Maximum throughput, rotates every request
-  - **Hybrid** (`--strategy=hybrid`, default): Smart selection using health + tokens + LRU
+    - **Sticky** (`--strategy=sticky`): Best for prompt caching, stays on same account
+    - **Round-Robin** (`--strategy=round-robin`): Maximum throughput, rotates every request
+    - **Hybrid** (`--strategy=hybrid`, default): Smart selection using health + tokens + LRU
 - Model-specific rate limiting via `account.modelRateLimits[modelId]`
 - Automatic switch only when rate-limited for > 2 minutes on the current model
 - Session ID derived from first user message hash for cache continuity
@@ -210,41 +212,44 @@ public/
 **Account Selection Strategies:**
 
 1. **Sticky Strategy** (best for caching):
-   - Stays on current account until rate-limited or unavailable
-   - Waits up to 2 minutes for short rate limits before switching
-   - Maintains prompt cache continuity across requests
+    - Stays on current account until rate-limited or unavailable
+    - Waits up to 2 minutes for short rate limits before switching
+    - Maintains prompt cache continuity across requests
 
 2. **Round-Robin Strategy** (best for throughput):
-   - Rotates to next account on every request
-   - Skips rate-limited/disabled accounts
-   - Maximizes concurrent request distribution
+    - Rotates to next account on every request
+    - Skips rate-limited/disabled accounts
+    - Maximizes concurrent request distribution
 
 3. **Hybrid Strategy** (default, smart distribution):
-   - Uses health scores, token buckets, and LRU for selection
-   - Scoring formula: `score = (Health × 2) + ((Tokens / MaxTokens × 100) × 5) + (LRU × 0.1)`
-   - Health scores: Track success/failure patterns with passive recovery
-   - Token buckets: Client-side rate limiting (50 tokens, 6 per minute regeneration)
-   - LRU freshness: Prefer accounts that have rested longer
-   - Configuration in `src/config.js` under `accountSelection`
+    - Uses health scores, token buckets, and LRU for selection
+    - Scoring formula: `score = (Health × 2) + ((Tokens / MaxTokens × 100) × 5) + (LRU × 0.1)`
+    - Health scores: Track success/failure patterns with passive recovery
+    - Token buckets: Client-side rate limiting (50 tokens, 6 per minute regeneration)
+    - LRU freshness: Prefer accounts that have rested longer
+    - Configuration in `src/config.js` under `accountSelection`
 
 **Account Data Model:**
 Each account object in `accounts.json` contains:
+
 - **Basic Info**: `email`, `source` (oauth/manual/database), `enabled`, `lastUsed`
 - **Credentials**: `refreshToken` (OAuth) or `apiKey` (manual)
 - **Subscription**: `{ tier, projectId, detectedAt }` - automatically detected via `loadCodeAssist` API
-  - `tier`: 'free' | 'pro' | 'ultra' (detected from `paidTier` or `currentTier`)
+    - `tier`: 'free' | 'pro' | 'ultra' (detected from `paidTier` or `currentTier`)
 - **Quota**: `{ models: {}, lastChecked }` - model-specific quota cache
-  - `models[modelId]`: `{ remainingFraction, resetTime }` from `fetchAvailableModels` API
+    - `models[modelId]`: `{ remainingFraction, resetTime }` from `fetchAvailableModels` API
 - **Rate Limits**: `modelRateLimits[modelId]` - temporary rate limit state (in-memory during runtime)
 - **Validity**: `isInvalid`, `invalidReason` - tracks accounts needing re-authentication
 
 **Prompt Caching:**
+
 - Cache is organization-scoped (requires same account + session ID)
 - Session ID is SHA256 hash of first user message content (stable across turns)
 - `cache_read_input_tokens` returned in usage metadata when cache hits
 - Token calculation: `input_tokens = promptTokenCount - cachedContentTokenCount`
 
 **Model Fallback (--fallback flag):**
+
 - When all accounts are exhausted for a model, automatically falls back to an alternate model
 - Fallback mappings defined in `MODEL_FALLBACK_MAP` in `src/constants.js`
 - Thinking models fall back to thinking models (e.g., `claude-sonnet-4-5-thinking` → `gemini-3-flash`)
@@ -252,6 +257,7 @@ Each account object in `accounts.json` contains:
 - Enable with `npm start -- --fallback` or `FALLBACK=true` environment variable
 
 **Cross-Model Thinking Signatures:**
+
 - Claude and Gemini use incompatible thinking signatures
 - When switching models mid-conversation, incompatible signatures are detected and dropped
 - Signature cache tracks model family ('claude' or 'gemini') for each signature
@@ -261,6 +267,7 @@ Each account object in `accounts.json` contains:
 - For Claude targets: lenient - lets Claude validate its own signatures
 
 **Native Module Auto-Rebuild:**
+
 - When Node.js is updated, native modules like `better-sqlite3` may become incompatible
 - The proxy automatically detects `NODE_MODULE_VERSION` mismatch errors
 - On detection, it attempts to rebuild the module using `npm rebuild`
@@ -271,27 +278,27 @@ Each account object in `accounts.json` contains:
 
 - **Stack**: Vanilla JS + Alpine.js + Tailwind CSS (local build with PostCSS)
 - **Build System**:
-  - Tailwind CLI with JIT compilation
-  - PostCSS + Autoprefixer
-  - DaisyUI component library
-  - Custom `@apply` directives in `public/css/src/input.css`
-  - Compiled output: `public/css/style.css` (auto-generated on `npm install`)
+    - Tailwind CLI with JIT compilation
+    - PostCSS + Autoprefixer
+    - DaisyUI component library
+    - Custom `@apply` directives in `public/css/src/input.css`
+    - Compiled output: `public/css/style.css` (auto-generated on `npm install`)
 - **Architecture**: Single Page Application (SPA) with dynamic view loading
 - **State Management**:
-  - Alpine.store for global state (accounts, settings, logs)
-  - Layered architecture: Service Layer (`account-actions.js`) → Component Layer → UI
+    - Alpine.store for global state (accounts, settings, logs)
+    - Layered architecture: Service Layer (`account-actions.js`) → Component Layer → UI
 - **Features**:
-  - Real-time dashboard with Chart.js visualization and subscription tier distribution
-  - Account list with tier badges (Ultra/Pro/Free) and quota progress bars
-  - OAuth flow handling via popup window
-  - Live log streaming via Server-Sent Events (SSE)
-  - Config editor for both Proxy and Claude CLI (`~/.claude/settings.json`)
-  - Skeleton loading screens for improved perceived performance
-  - Empty state UX with actionable prompts
-  - Loading states for all async operations
+    - Real-time dashboard with Chart.js visualization and subscription tier distribution
+    - Account list with tier badges (Ultra/Pro/Free) and quota progress bars
+    - OAuth flow handling via popup window
+    - Live log streaming via Server-Sent Events (SSE)
+    - Config editor for both Proxy and Claude CLI (`~/.claude/settings.json`)
+    - Skeleton loading screens for improved perceived performance
+    - Empty state UX with actionable prompts
+    - Loading states for all async operations
 - **Accessibility**:
-  - ARIA labels on search inputs and icon buttons
-  - Keyboard navigation support (Escape to clear search)
+    - ARIA labels on search inputs and icon buttons
+    - Keyboard navigation support (Escape to clear search)
 - **Security**: Optional password protection via `WEBUI_PASSWORD` env var
 - **Smart Refresh**: Client-side polling with ±20% jitter and tab visibility detection (3x slower when hidden)
 
@@ -306,6 +313,7 @@ Each account object in `accounts.json` contains:
 ## Code Organization
 
 **Constants:** All configuration values are centralized in `src/constants.js`:
+
 - API endpoints and headers
 - Model mappings and model family detection (`getModelFamily()`, `isThinkingModel()`)
 - Model fallback mappings (`MODEL_FALLBACK_MAP`)
@@ -314,29 +322,34 @@ Each account object in `accounts.json` contains:
 - Thinking model settings
 
 **Model Family Handling:**
+
 - `getModelFamily(model)` returns `'claude'` or `'gemini'` based on model name
 - Claude models use `signature` field on thinking blocks
 - Gemini models use `thoughtSignature` field on functionCall parts (cached or sentinel value)
 - When Claude Code strips `thoughtSignature`, the proxy tries to restore from cache, then falls back to `skip_thought_signature_validator`
 
 **Error Handling:** Use custom error classes from `src/errors.js`:
+
 - `RateLimitError` - 429/RESOURCE_EXHAUSTED errors
 - `AuthError` - Authentication failures
 - `ApiError` - Upstream API errors
 - Helper functions: `isRateLimitError()`, `isAuthError()`
 
 **Utilities:** Shared helpers in `src/utils/helpers.js`:
+
 - `formatDuration(ms)` - Format milliseconds as "1h23m45s"
 - `sleep(ms)` - Promise-based delay
 - `isNetworkError(error)` - Check if error is a transient network error
 
 **Data Persistence:**
+
 - Subscription and quota data are automatically fetched when `/account-limits` is called
 - Updated data is saved to `accounts.json` asynchronously (non-blocking)
 - On server restart, accounts load with last known subscription/quota state
 - Quota is refreshed on each WebUI poll (default: 30s with jitter)
 
 **Logger:** Structured logging via `src/utils/logger.js`:
+
 - `logger.info(msg)` - Standard info (blue)
 - `logger.success(msg)` - Success messages (green)
 - `logger.warn(msg)` - Warnings (yellow)
@@ -354,24 +367,27 @@ Each account object in `accounts.json` contains:
 - `/api/stats/history` - Retrieve 30-day request history (sorted chronologically)
 - `/api/auth/url` - Generate Google OAuth URL
 - `/account-limits` - Fetch account quotas and subscription data
-  - Returns: `{ accounts: [{ email, subscription: { tier, projectId }, limits: {...} }], models: [...] }`
-  - Query params: `?format=table` (ASCII table) or `?includeHistory=true` (adds usage stats)
+    - Returns: `{ accounts: [{ email, subscription: { tier, projectId }, limits: {...} }], models: [...] }`
+    - Query params: `?format=table` (ASCII table) or `?includeHistory=true` (adds usage stats)
 
 ## Frontend Development
 
 ### CSS Build System
 
 **Workflow:**
+
 1. Edit styles in `public/css/src/input.css` (Tailwind source with `@apply` directives)
 2. Run `npm run build:css` to compile (or `npm run watch:css` for auto-rebuild)
 3. Compiled CSS output: `public/css/style.css` (minified, committed to git)
 
 **Component Styles:**
+
 - Use `@apply` to abstract common Tailwind patterns into reusable classes
 - Example: `.btn-action-ghost`, `.status-pill-success`, `.input-search`
 - Skeleton loading: `.skeleton`, `.skeleton-stat-card`, `.skeleton-chart`
 
 **When to rebuild:**
+
 - After modifying `public/css/src/input.css`
 - After pulling changes that updated CSS source
 - Automatically on `npm install` (via `prepare` hook)
@@ -401,6 +417,7 @@ async myOperation() {
 
 **Constants**:
 All frontend magic numbers and configuration values are centralized in `public/js/config/constants.js`. Use `window.AppConstants` to access:
+
 - `INTERVALS`: Refresh rates and timeouts
 - `LIMITS`: Data quotas and display limits
 - `UI`: Animation durations and delay settings
@@ -413,9 +430,9 @@ Use `window.AccountActions` for account operations instead of direct API calls:
 // ✅ Good: Use service layer
 const result = await window.AccountActions.refreshAccount(email);
 if (result.success) {
-  this.$store.global.showToast('Account refreshed', 'success');
+    this.$store.global.showToast('Account refreshed', 'success');
 } else {
-  this.$store.global.showToast(result.error, 'error');
+    this.$store.global.showToast(result.error, 'error');
 }
 
 // ❌ Bad: Direct API call in component
@@ -423,6 +440,7 @@ const response = await fetch(`/api/accounts/${email}/refresh`);
 ```
 
 **Available methods:**
+
 - `refreshAccount(email)` - Refresh token and quota
 - `toggleAccount(email, enabled)` - Enable/disable account (with optimistic update)
 - `deleteAccount(email)` - Delete account
@@ -437,21 +455,21 @@ All methods return `{success: boolean, data?: object, error?: string}`
 Dashboard is split into three modules for maintainability:
 
 1. **stats.js** - Account statistics calculation
-   - `updateStats(component)` - Computes active/limited/total counts
-   - Updates subscription tier distribution
+    - `updateStats(component)` - Computes active/limited/total counts
+    - Updates subscription tier distribution
 
 2. **charts.js** - Chart.js visualizations
-   - `initQuotaChart(component)` - Initialize quota distribution pie chart
-   - `initTrendChart(component)` - Initialize usage trend line chart
-   - `updateQuotaChart(component)` - Update quota chart data
-   - `updateTrendChart(component)` - Update trend chart (with concurrency lock)
+    - `initQuotaChart(component)` - Initialize quota distribution pie chart
+    - `initTrendChart(component)` - Initialize usage trend line chart
+    - `updateQuotaChart(component)` - Update quota chart data
+    - `updateTrendChart(component)` - Update trend chart (with concurrency lock)
 
 3. **filters.js** - Filter state management
-   - `getInitialState()` - Default filter values
-   - `loadPreferences(component)` - Load from localStorage
-   - `savePreferences(component)` - Save to localStorage
-   - `autoSelectTopN(component)` - Smart select top 5 active models
-   - Filter types: time range (1h/6h/24h/7d/all), display mode, family/model selection
+    - `getInitialState()` - Default filter values
+    - `loadPreferences(component)` - Load from localStorage
+    - `savePreferences(component)` - Save to localStorage
+    - `autoSelectTopN(component)` - Smart select top 5 active models
+    - Filter types: time range (1h/6h/24h/7d/all), display mode, family/model selection
 
 Each module is well-documented with JSDoc comments.
 

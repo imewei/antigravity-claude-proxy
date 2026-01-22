@@ -175,14 +175,16 @@ export class CapacityExhaustedError extends AntigravityError {
 export function isRateLimitError(error) {
     if (error instanceof RateLimitError) return true;
     const msg = (error.message || '').toLowerCase();
-    return msg.includes('429') ||
+    return (
+        msg.includes('429') ||
         msg.includes('resource_exhausted') ||
         msg.includes('resource exhausted') ||
         msg.includes('quota_exhausted') ||
         msg.includes('quota exhausted') ||
         msg.includes('rate limit') ||
         msg.includes('rate_limited') ||
-        msg.includes('model_capacity_exhausted');
+        msg.includes('model_capacity_exhausted')
+    );
 }
 
 /**
@@ -194,9 +196,11 @@ export function isRateLimitError(error) {
 export function isAuthError(error) {
     if (error instanceof AuthError) return true;
     const msg = (error.message || '').toUpperCase();
-    return msg.includes('AUTH_INVALID') ||
+    return (
+        msg.includes('AUTH_INVALID') ||
         msg.includes('INVALID_GRANT') ||
-        msg.includes('TOKEN REFRESH FAILED');
+        msg.includes('TOKEN REFRESH FAILED')
+    );
 }
 
 /**
@@ -205,8 +209,7 @@ export function isAuthError(error) {
  * @returns {boolean}
  */
 export function isEmptyResponseError(error) {
-    return error instanceof EmptyResponseError ||
-        error?.name === 'EmptyResponseError';
+    return error instanceof EmptyResponseError || error?.name === 'EmptyResponseError';
 }
 
 /**
@@ -219,10 +222,12 @@ export function isEmptyResponseError(error) {
 export function isCapacityExhaustedError(error) {
     if (error instanceof CapacityExhaustedError) return true;
     const msg = (error.message || '').toLowerCase();
-    return msg.includes('model_capacity_exhausted') ||
+    return (
+        msg.includes('model_capacity_exhausted') ||
         msg.includes('capacity_exhausted') ||
         msg.includes('model is currently overloaded') ||
-        msg.includes('service temporarily unavailable');
+        msg.includes('service temporarily unavailable')
+    );
 }
 
 export default {

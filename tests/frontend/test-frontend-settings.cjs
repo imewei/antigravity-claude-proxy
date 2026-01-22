@@ -12,19 +12,23 @@ const BASE_URL = process.env.TEST_BASE_URL || `http://localhost:${process.env.PO
 function request(path, options = {}) {
     return new Promise((resolve, reject) => {
         const url = new URL(path, BASE_URL);
-        const req = http.request(url, {
-            method: options.method || 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
+        const req = http.request(
+            url,
+            {
+                method: options.method || 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
+            },
+            (res) => {
+                let data = '';
+                res.on('data', (chunk) => (data += chunk));
+                res.on('end', () => {
+                    resolve({ status: res.statusCode, data, headers: res.headers });
+                });
             }
-        }, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                resolve({ status: res.statusCode, data, headers: res.headers });
-            });
-        });
+        );
         req.on('error', reject);
         if (options.body) req.write(JSON.stringify(options.body));
         req.end();
@@ -50,14 +54,14 @@ const tests = [
             const html = res.data;
 
             const uiElements = [
-                'language',           // Language selector
-                'refreshInterval',    // Polling interval
-                'logLimit',           // Log buffer size
-                'showExhausted',      // Show exhausted models toggle
-                'compact'             // Compact mode toggle
+                'language', // Language selector
+                'refreshInterval', // Polling interval
+                'logLimit', // Log buffer size
+                'showExhausted', // Show exhausted models toggle
+                'compact' // Compact mode toggle
             ];
 
-            const missing = uiElements.filter(el => !html.includes(el));
+            const missing = uiElements.filter((el) => !html.includes(el));
             if (missing.length > 0) {
                 throw new Error(`Missing UI elements: ${missing.join(', ')}`);
             }
@@ -80,7 +84,7 @@ const tests = [
                 'ANTHROPIC_AUTH_TOKEN'
             ];
 
-            const missing = claudeElements.filter(el => !html.includes(el));
+            const missing = claudeElements.filter((el) => !html.includes(el));
             if (missing.length > 0) {
                 throw new Error(`Missing Claude config elements: ${missing.join(', ')}`);
             }
@@ -360,7 +364,7 @@ const tests = [
             // Verify it exists
             const getRes = await request('/api/claude/presets');
             const getData = JSON.parse(getRes.data);
-            const found = getData.presets.find(p => p.name === '__test_preset__');
+            const found = getData.presets.find((p) => p.name === '__test_preset__');
             if (!found) {
                 throw new Error('Created preset not found in list');
             }
@@ -382,7 +386,7 @@ const tests = [
             // Verify it's gone
             const getRes = await request('/api/claude/presets');
             const getData = JSON.parse(getRes.data);
-            const found = getData.presets.find(p => p.name === '__test_preset__');
+            const found = getData.presets.find((p) => p.name === '__test_preset__');
             if (found) {
                 throw new Error('Deleted preset still exists');
             }
@@ -397,14 +401,14 @@ const tests = [
             const html = res.data;
 
             const presetElements = [
-                'selectedPresetName',    // Preset dropdown binding
-                'saveCurrentAsPreset',   // Save button function
-                'deleteSelectedPreset',  // Delete button function
-                'save_preset_modal',     // Save modal
-                'configPresets'          // Translation key for section title
+                'selectedPresetName', // Preset dropdown binding
+                'saveCurrentAsPreset', // Save button function
+                'deleteSelectedPreset', // Delete button function
+                'save_preset_modal', // Save modal
+                'configPresets' // Translation key for section title
             ];
 
-            const missing = presetElements.filter(el => !html.includes(el));
+            const missing = presetElements.filter((el) => !html.includes(el));
             if (missing.length > 0) {
                 throw new Error(`Missing preset UI elements: ${missing.join(', ')}`);
             }
@@ -439,7 +443,7 @@ async function runTests() {
     process.exit(failed > 0 ? 1 : 0);
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
     console.error('Test runner failed:', err);
     process.exit(1);
 });

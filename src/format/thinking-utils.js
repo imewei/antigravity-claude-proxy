@@ -13,10 +13,12 @@ import { logger } from '../utils/logger.js';
  * @returns {boolean} True if the part is a thinking block
  */
 function isThinkingPart(part) {
-    return part.type === 'thinking' ||
+    return (
+        part.type === 'thinking' ||
         part.type === 'redacted_thinking' ||
         part.thinking !== undefined ||
-        part.thought === true;
+        part.thought === true
+    );
 }
 
 /**
@@ -34,11 +36,12 @@ function hasValidSignature(part) {
  * @returns {boolean} True if any tool_use has thoughtSignature (Gemini pattern)
  */
 export function hasGeminiHistory(messages) {
-    return messages.some(msg =>
-        Array.isArray(msg.content) &&
-        msg.content.some(block =>
-            block.type === 'tool_use' && block.thoughtSignature !== undefined
-        )
+    return messages.some(
+        (msg) =>
+            Array.isArray(msg.content) &&
+            msg.content.some(
+                (block) => block.type === 'tool_use' && block.thoughtSignature !== undefined
+            )
     );
 }
 
@@ -49,12 +52,10 @@ export function hasGeminiHistory(messages) {
  * @returns {boolean} True if any assistant message has unsigned thinking blocks
  */
 export function hasUnsignedThinkingBlocks(messages) {
-    return messages.some(msg => {
+    return messages.some((msg) => {
         if (msg.role !== 'assistant' && msg.role !== 'model') return false;
         if (!Array.isArray(msg.content)) return false;
-        return msg.content.some(block =>
-            isThinkingPart(block) && !hasValidSignature(block)
-        );
+        return msg.content.some((block) => isThinkingPart(block) && !hasValidSignature(block));
     });
 }
 
@@ -141,7 +142,7 @@ function filterContentArray(contentArray) {
  * @returns {Array<{role: string, parts: Array}>} Filtered contents with unsigned thinking blocks removed
  */
 export function filterUnsignedThinkingBlocks(contents) {
-    return contents.map(content => {
+    return contents.map((content) => {
         if (!content || typeof content !== 'object') return content;
 
         if (Array.isArray(content.parts)) {
@@ -185,7 +186,11 @@ export function removeTrailingThinkingBlocks(content) {
     }
 
     if (endIndex < content.length) {
-        logger.debug('[ThinkingUtils] Removed', content.length - endIndex, 'trailing unsigned thinking blocks');
+        logger.debug(
+            '[ThinkingUtils] Removed',
+            content.length - endIndex,
+            'trailing unsigned thinking blocks'
+        );
         return content.slice(0, endIndex);
     }
 
@@ -220,7 +225,9 @@ export function restoreThinkingSignatures(content) {
     }
 
     if (filtered.length < originalLength) {
-        logger.debug(`[ThinkingUtils] Dropped ${originalLength - filtered.length} unsigned thinking block(s)`);
+        logger.debug(
+            `[ThinkingUtils] Dropped ${originalLength - filtered.length} unsigned thinking block(s)`
+        );
     }
 
     return filtered;
@@ -281,8 +288,8 @@ export function reorderAssistantContent(content) {
 
     // Log only if actual reordering happened (not just filtering)
     if (reordered.length === content.length) {
-        const originalOrder = content.map(b => b?.type || 'unknown').join(',');
-        const newOrder = reordered.map(b => b?.type || 'unknown').join(',');
+        const originalOrder = content.map((b) => b?.type || 'unknown').join(',');
+        const newOrder = reordered.map((b) => b?.type || 'unknown').join(',');
         if (originalOrder !== newOrder) {
             logger.debug('[ThinkingUtils] Reordered assistant content');
         }
@@ -306,12 +313,13 @@ export function reorderAssistantContent(content) {
 function messageHasValidThinking(message) {
     const content = message.content || message.parts || [];
     if (!Array.isArray(content)) return false;
-    return content.some(block => {
+    return content.some((block) => {
         if (!isThinkingPart(block)) return false;
         // Check for valid signature (Anthropic style)
         if (block.signature && block.signature.length >= MIN_SIGNATURE_LENGTH) return true;
         // Check for thoughtSignature (Gemini style on functionCall)
-        if (block.thoughtSignature && block.thoughtSignature.length >= MIN_SIGNATURE_LENGTH) return true;
+        if (block.thoughtSignature && block.thoughtSignature.length >= MIN_SIGNATURE_LENGTH)
+            return true;
         return false;
     });
 }
@@ -324,9 +332,7 @@ function messageHasValidThinking(message) {
 function messageHasToolUse(message) {
     const content = message.content || message.parts || [];
     if (!Array.isArray(content)) return false;
-    return content.some(block =>
-        block.type === 'tool_use' || block.functionCall
-    );
+    return content.some((block) => block.type === 'tool_use' || block.functionCall);
 }
 
 /**
@@ -337,9 +343,7 @@ function messageHasToolUse(message) {
 function messageHasToolResult(message) {
     const content = message.content || message.parts || [];
     if (!Array.isArray(content)) return false;
-    return content.some(block =>
-        block.type === 'tool_result' || block.functionResponse
-    );
+    return content.some((block) => block.type === 'tool_result' || block.functionResponse);
 }
 
 /**
@@ -352,9 +356,7 @@ function isPlainUserMessage(message) {
     const content = message.content || message.parts || [];
     if (!Array.isArray(content)) return typeof content === 'string';
     // Check if it has tool_result blocks
-    return !content.some(block =>
-        block.type === 'tool_result' || block.functionResponse
-    );
+    return !content.some((block) => block.type === 'tool_result' || block.functionResponse);
 }
 
 /**
@@ -368,7 +370,12 @@ function isPlainUserMessage(message) {
  */
 function analyzeConversationState(messages) {
     if (!Array.isArray(messages) || messages.length === 0) {
-        return { inToolLoop: false, interruptedTool: false, turnHasThinking: false, toolResultCount: 0 };
+        return {
+            inToolLoop: false,
+            interruptedTool: false,
+            turnHasThinking: false,
+            toolResultCount: 0
+        };
     }
 
     // Find the last assistant message
@@ -381,7 +388,12 @@ function analyzeConversationState(messages) {
     }
 
     if (lastAssistantIdx === -1) {
-        return { inToolLoop: false, interruptedTool: false, turnHasThinking: false, toolResultCount: 0 };
+        return {
+            inToolLoop: false,
+            interruptedTool: false,
+            turnHasThinking: false,
+            toolResultCount: 0
+        };
     }
 
     const lastAssistant = messages[lastAssistantIdx];
@@ -451,11 +463,11 @@ export function needsThinkingRecovery(messages) {
 function stripInvalidThinkingBlocks(messages, targetFamily = null) {
     let strippedCount = 0;
 
-    const result = messages.map(msg => {
+    const result = messages.map((msg) => {
         const content = msg.content || msg.parts;
         if (!Array.isArray(content)) return msg;
 
-        const filtered = content.filter(block => {
+        const filtered = content.filter((block) => {
             // Keep non-thinking blocks
             if (!isThinkingPart(block)) return true;
 
@@ -483,7 +495,10 @@ function stripInvalidThinkingBlocks(messages, targetFamily = null) {
 
         // Use '.' instead of '' because claude models reject empty text parts
         if (msg.content) {
-            return { ...msg, content: filtered.length > 0 ? filtered : [{ type: 'text', text: '.' }] };
+            return {
+                ...msg,
+                content: filtered.length > 0 ? filtered : [{ type: 'text', text: '.' }]
+            };
         } else if (msg.parts) {
             return { ...msg, parts: filtered.length > 0 ? filtered : [{ text: '.' }] };
         }
@@ -491,7 +506,9 @@ function stripInvalidThinkingBlocks(messages, targetFamily = null) {
     });
 
     if (strippedCount > 0) {
-        logger.debug(`[ThinkingUtils] Stripped ${strippedCount} invalid/incompatible thinking block(s)`);
+        logger.debug(
+            `[ThinkingUtils] Stripped ${strippedCount} invalid/incompatible thinking block(s)`
+        );
     }
 
     return result;
@@ -535,9 +552,10 @@ export function closeToolLoopForThinking(messages, targetFamily = null) {
         logger.debug('[ThinkingUtils] Applied thinking recovery for interrupted tool');
     } else if (state.inToolLoop) {
         // For tool loops: add synthetic messages to close the loop
-        const syntheticText = state.toolResultCount === 1
-            ? '[Tool execution completed.]'
-            : `[${state.toolResultCount} tool executions completed.]`;
+        const syntheticText =
+            state.toolResultCount === 1
+                ? '[Tool execution completed.]'
+                : `[${state.toolResultCount} tool executions completed.]`;
 
         // Inject synthetic model message to complete the turn
         modified.push({

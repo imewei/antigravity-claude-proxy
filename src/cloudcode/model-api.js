@@ -62,7 +62,7 @@ export async function listModels(token) {
  */
 export async function fetchAvailableModels(token, projectId = null) {
     const headers = {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
         ...ANTIGRAVITY_HEADERS
     };
@@ -81,7 +81,9 @@ export async function fetchAvailableModels(token, projectId = null) {
 
             if (!response.ok) {
                 // const errorText = await response.text();
-                logger.warn(`[CloudCode] fetchAvailableModels error at ${endpoint}: ${response.status}`);
+                logger.warn(
+                    `[CloudCode] fetchAvailableModels error at ${endpoint}: ${response.status}`
+                );
                 continue;
             }
 
@@ -114,7 +116,9 @@ export async function getModelQuotas(token, projectId = null) {
         if (modelData.quotaInfo) {
             quotas[modelId] = {
                 // When remainingFraction is missing but resetTime is present, quota is exhausted (0%)
-                remainingFraction: modelData.quotaInfo.remainingFraction ?? (modelData.quotaInfo.resetTime ? 0 : null),
+                remainingFraction:
+                    modelData.quotaInfo.remainingFraction ??
+                    (modelData.quotaInfo.resetTime ? 0 : null),
                 resetTime: modelData.quotaInfo.resetTime ?? null
             };
         }
@@ -157,7 +161,7 @@ export function parseTierId(tierId) {
  */
 export async function getSubscriptionTier(token) {
     const headers = {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
         ...LOAD_CODE_ASSIST_HEADERS
     };
@@ -186,7 +190,9 @@ export async function getSubscriptionTier(token) {
             const data = await response.json();
 
             // Debug: Log all tier-related fields from the response
-            logger.debug(`[CloudCode] loadCodeAssist tier data: paidTier=${JSON.stringify(data.paidTier)}, currentTier=${JSON.stringify(data.currentTier)}, allowedTiers=${JSON.stringify(data.allowedTiers?.map(t => ({ id: t?.id, isDefault: t?.isDefault })))}`);
+            logger.debug(
+                `[CloudCode] loadCodeAssist tier data: paidTier=${JSON.stringify(data.paidTier)}, currentTier=${JSON.stringify(data.currentTier)}, allowedTiers=${JSON.stringify(data.allowedTiers?.map((t) => ({ id: t?.id, isDefault: t?.isDefault })))}`
+            );
 
             // Extract project ID
             let projectId = null;
@@ -221,9 +227,13 @@ export async function getSubscriptionTier(token) {
             }
 
             // 3. Fall back to allowedTiers (find the default or first non-free tier)
-            if (tier === 'unknown' && Array.isArray(data.allowedTiers) && data.allowedTiers.length > 0) {
+            if (
+                tier === 'unknown' &&
+                Array.isArray(data.allowedTiers) &&
+                data.allowedTiers.length > 0
+            ) {
                 // First look for the default tier
-                let defaultTier = data.allowedTiers.find(t => t?.isDefault);
+                let defaultTier = data.allowedTiers.find((t) => t?.isDefault);
                 if (!defaultTier) {
                     defaultTier = data.allowedTiers[0];
                 }
@@ -234,7 +244,9 @@ export async function getSubscriptionTier(token) {
                 }
             }
 
-            logger.debug(`[CloudCode] Subscription detected: ${tier} (tierId: ${tierId}, source: ${tierSource}), Project: ${projectId}`);
+            logger.debug(
+                `[CloudCode] Subscription detected: ${tier} (tierId: ${tierId}, source: ${tierSource}), Project: ${projectId}`
+            );
 
             return { tier, projectId };
         } catch (error) {
@@ -243,6 +255,8 @@ export async function getSubscriptionTier(token) {
     }
 
     // Fallback: return default values if all endpoints fail
-    logger.warn('[CloudCode] Failed to detect subscription tier from all endpoints. Defaulting to free.');
+    logger.warn(
+        '[CloudCode] Failed to detect subscription tier from all endpoints. Defaulting to free.'
+    );
     return { tier: 'free', projectId: null };
 }

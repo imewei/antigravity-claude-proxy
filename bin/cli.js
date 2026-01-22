@@ -8,15 +8,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Read package.json for version
-const packageJson = JSON.parse(
-  readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')
-);
+const packageJson = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
 
 const args = process.argv.slice(2);
 const command = args[0];
 
 function showHelp() {
-  console.log(`
+    console.log(`
 antigravity-claude-proxy v${packageJson.version}
 
 Proxy server for using Antigravity's Claude models with Claude Code CLI.
@@ -57,53 +55,53 @@ CONFIGURATION:
 }
 
 function showVersion() {
-  console.log(packageJson.version);
+    console.log(packageJson.version);
 }
 
 async function main() {
-  // Handle flags
-  if (args.includes('--help') || args.includes('-h')) {
-    showHelp();
-    process.exit(0);
-  }
-
-  if (args.includes('--version') || args.includes('-v')) {
-    showVersion();
-    process.exit(0);
-  }
-
-  // Handle commands
-  switch (command) {
-    case 'start':
-    case undefined:
-      // Default to starting the server
-      await import('../src/index.js');
-      break;
-
-    case 'accounts': {
-      // Pass remaining args to accounts CLI
-      const subCommand = args[1] || 'add';
-      process.argv = ['node', 'accounts-cli.js', subCommand, ...args.slice(2)];
-      await import('../src/cli/accounts.js');
-      break;
+    // Handle flags
+    if (args.includes('--help') || args.includes('-h')) {
+        showHelp();
+        process.exit(0);
     }
 
-    case 'help':
-      showHelp();
-      break;
+    if (args.includes('--version') || args.includes('-v')) {
+        showVersion();
+        process.exit(0);
+    }
 
-    case 'version':
-      showVersion();
-      break;
+    // Handle commands
+    switch (command) {
+        case 'start':
+        case undefined:
+            // Default to starting the server
+            await import('../src/index.js');
+            break;
 
-    default:
-      console.error(`Unknown command: ${command}`);
-      console.error('Run "antigravity-proxy --help" for usage information.');
-      process.exit(1);
-  }
+        case 'accounts': {
+            // Pass remaining args to accounts CLI
+            const subCommand = args[1] || 'add';
+            process.argv = ['node', 'accounts-cli.js', subCommand, ...args.slice(2)];
+            await import('../src/cli/accounts.js');
+            break;
+        }
+
+        case 'help':
+            showHelp();
+            break;
+
+        case 'version':
+            showVersion();
+            break;
+
+        default:
+            console.error(`Unknown command: ${command}`);
+            console.error('Run "antigravity-proxy --help" for usage information.');
+            process.exit(1);
+    }
 }
 
 main().catch((err) => {
-  console.error('Error:', err.message);
-  process.exit(1);
+    console.error('Error:', err.message);
+    process.exit(1);
 });

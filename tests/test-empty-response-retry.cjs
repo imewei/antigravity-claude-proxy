@@ -29,9 +29,18 @@ async function testEmptyResponseRetry() {
         // const handler = await import('../src/cloudcode/streaming-handler.js');
         const constants = await import('../src/constants.js');
 
-        console.log('  ✓ EmptyResponseError class exists:', typeof errors.EmptyResponseError === 'function');
-        console.log('  ✓ isEmptyResponseError helper exists:', typeof errors.isEmptyResponseError === 'function');
-        console.log('  ✓ MAX_EMPTY_RESPONSE_RETRIES constant:', constants.MAX_EMPTY_RESPONSE_RETRIES);
+        console.log(
+            '  ✓ EmptyResponseError class exists:',
+            typeof errors.EmptyResponseError === 'function'
+        );
+        console.log(
+            '  ✓ isEmptyResponseError helper exists:',
+            typeof errors.isEmptyResponseError === 'function'
+        );
+        console.log(
+            '  ✓ MAX_EMPTY_RESPONSE_RETRIES constant:',
+            constants.MAX_EMPTY_RESPONSE_RETRIES
+        );
         console.log('  ✓ sse-streamer.js imports EmptyResponseError');
         console.log('  ✓ streaming-handler.js imports isEmptyResponseError');
         console.log('  Result: PASS\n');
@@ -64,16 +73,22 @@ async function testEmptyResponseRetry() {
         console.log(`  Error name: ${testError.name}`);
         console.log(`  Error code: ${testError.code}`);
         console.log(`  Error retryable: ${testError.retryable}`);
-        console.log(`  isEmptyResponseError recognizes it: ${errors.isEmptyResponseError(testError)}`);
+        console.log(
+            `  isEmptyResponseError recognizes it: ${errors.isEmptyResponseError(testError)}`
+        );
 
         const genericError = new Error('Generic error');
-        console.log(`  isEmptyResponseError rejects generic: ${!errors.isEmptyResponseError(genericError)}`);
+        console.log(
+            `  isEmptyResponseError rejects generic: ${!errors.isEmptyResponseError(genericError)}`
+        );
 
-        if (testError.name === 'EmptyResponseError' &&
+        if (
+            testError.name === 'EmptyResponseError' &&
             testError.code === 'EMPTY_RESPONSE' &&
             testError.retryable === true &&
             errors.isEmptyResponseError(testError) &&
-            !errors.isEmptyResponseError(genericError)) {
+            !errors.isEmptyResponseError(genericError)
+        ) {
             console.log('  Result: PASS\n');
         } else {
             console.log('  Result: FAIL\n');
@@ -97,7 +112,6 @@ async function testEmptyResponseRetry() {
         console.log('  - Production testing shows 88% recovery rate\n');
 
         return true;
-
     } catch (error) {
         console.error('\n[ERROR] Test failed:', error.message);
         console.error(error.stack);
@@ -107,10 +121,10 @@ async function testEmptyResponseRetry() {
 
 // Run tests
 testEmptyResponseRetry()
-    .then(success => {
+    .then((success) => {
         process.exit(success ? 0 : 1);
     })
-    .catch(error => {
+    .catch((error) => {
         console.error('Fatal error:', error);
         process.exit(1);
     });

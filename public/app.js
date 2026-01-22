@@ -28,18 +28,18 @@ document.addEventListener('alpine:init', () => {
         }
 
         fetch(`views/${viewName}.html?t=${Date.now()}`)
-            .then(response => {
+            .then((response) => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response.text();
             })
-            .then(html => {
+            .then((html) => {
                 // Update cache (optional, or remove if we want always-fresh)
                 // keeping cache for session performance, but initial load will now bypass browser cache
                 window.viewCache.set(viewName, html);
                 el.innerHTML = html;
                 Alpine.initTree(el);
             })
-            .catch(err => {
+            .catch((err) => {
                 console.error('Failed to load view:', viewName, err);
                 el.innerHTML = `<div class="p-4 border border-red-500/50 bg-red-500/10 rounded-lg text-red-400 font-mono text-sm">
                     Error loading view: ${viewName}<br>
@@ -68,24 +68,24 @@ document.addEventListener('alpine:init', () => {
             // Handle responsive sidebar transitions
             let lastWidth = window.innerWidth;
             let resizeTimeout = null;
-            
+
             window.addEventListener('resize', () => {
                 if (resizeTimeout) clearTimeout(resizeTimeout);
-                
+
                 resizeTimeout = setTimeout(() => {
                     const currentWidth = window.innerWidth;
                     const lgBreakpoint = 1024;
-                    
+
                     // Desktop -> Mobile: Auto-close sidebar to prevent overlay blocking screen
                     if (lastWidth >= lgBreakpoint && currentWidth < lgBreakpoint) {
                         this.sidebarOpen = false;
                     }
-                    
+
                     // Mobile -> Desktop: Auto-open sidebar (restore standard desktop layout)
                     if (lastWidth < lgBreakpoint && currentWidth >= lgBreakpoint) {
                         this.sidebarOpen = true;
                     }
-                    
+
                     lastWidth = currentWidth;
                 }, 150);
             });
@@ -119,7 +119,10 @@ document.addEventListener('alpine:init', () => {
             if (this.refreshTimer) clearInterval(this.refreshTimer);
             const interval = parseInt(Alpine.store('settings')?.refreshInterval || 60);
             if (interval > 0) {
-                this.refreshTimer = setInterval(() => Alpine.store('data').fetchData(), interval * 1000);
+                this.refreshTimer = setInterval(
+                    () => Alpine.store('data').fetchData(),
+                    interval * 1000
+                );
             }
         },
 
@@ -141,10 +144,17 @@ document.addEventListener('alpine:init', () => {
 
                 if (data.status === 'ok') {
                     // Show info toast that OAuth is in progress
-                    Alpine.store('global').showToast(Alpine.store('global').t('oauthInProgress'), 'info');
+                    Alpine.store('global').showToast(
+                        Alpine.store('global').t('oauthInProgress'),
+                        'info'
+                    );
 
                     // Open OAuth window
-                    const oauthWindow = window.open(data.url, 'google_oauth', 'width=600,height=700,scrollbars=yes');
+                    const oauthWindow = window.open(
+                        data.url,
+                        'google_oauth',
+                        'width=600,height=700,scrollbars=yes'
+                    );
 
                     // Poll for account changes instead of relying on postMessage
                     // (since OAuth callback is now on port 51121, not this server)
@@ -162,7 +172,10 @@ document.addEventListener('alpine:init', () => {
                             cancelled = true;
                             clearInterval(pollInterval);
                             Alpine.store('global').oauthProgress.active = false;
-                            Alpine.store('global').showToast(Alpine.store('global').t('oauthCancelled'), 'info');
+                            Alpine.store('global').showToast(
+                                Alpine.store('global').t('oauthCancelled'),
+                                'info'
+                            );
                             if (oauthWindow && !oauthWindow.closed) {
                                 oauthWindow.close();
                             }
@@ -182,7 +195,10 @@ document.addEventListener('alpine:init', () => {
                         if (oauthWindow && oauthWindow.closed && !cancelled) {
                             clearInterval(pollInterval);
                             Alpine.store('global').oauthProgress.active = false;
-                            Alpine.store('global').showToast(Alpine.store('global').t('oauthWindowClosed'), 'warning');
+                            Alpine.store('global').showToast(
+                                Alpine.store('global').t('oauthWindowClosed'),
+                                'warning'
+                            );
                             return;
                         }
 
@@ -195,7 +211,9 @@ document.addEventListener('alpine:init', () => {
                             clearInterval(pollInterval);
                             Alpine.store('global').oauthProgress.active = false;
 
-                            const actionKey = reAuthEmail ? 'accountReauthSuccess' : 'accountAddedSuccess';
+                            const actionKey = reAuthEmail
+                                ? 'accountReauthSuccess'
+                                : 'accountAddedSuccess';
                             Alpine.store('global').showToast(
                                 Alpine.store('global').t(actionKey),
                                 'success'
@@ -218,10 +236,16 @@ document.addEventListener('alpine:init', () => {
                         }
                     }, 2000); // Poll every 2 seconds
                 } else {
-                    Alpine.store('global').showToast(data.error || Alpine.store('global').t('failedToGetAuthUrl'), 'error');
+                    Alpine.store('global').showToast(
+                        data.error || Alpine.store('global').t('failedToGetAuthUrl'),
+                        'error'
+                    );
                 }
             } catch (e) {
-                Alpine.store('global').showToast(Alpine.store('global').t('failedToStartOAuth') + ': ' + e.message, 'error');
+                Alpine.store('global').showToast(
+                    Alpine.store('global').t('failedToStartOAuth') + ': ' + e.message,
+                    'error'
+                );
             }
         }
     }));

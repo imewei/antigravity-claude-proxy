@@ -52,7 +52,9 @@ export function parseResetTime(responseOrError, errorText = '') {
                 const resetTimestamp = parseInt(ratelimitReset, 10) * 1000;
                 resetMs = resetTimestamp - Date.now();
                 if (resetMs > 0) {
-                    logger.debug(`[CloudCode] x-ratelimit-reset: ${new Date(resetTimestamp).toISOString()}`);
+                    logger.debug(
+                        `[CloudCode] x-ratelimit-reset: ${new Date(resetTimestamp).toISOString()}`
+                    );
                 } else {
                     resetMs = null;
                 }
@@ -88,14 +90,18 @@ export function parseResetTime(responseOrError, errorText = '') {
 
         // Try to extract "quotaResetTimeStamp" (ISO format like "2025-12-31T07:00:47Z")
         if (!resetMs) {
-            const quotaTimestampMatch = msg.match(/quotaResetTimeStamp[:\s"]+(\d{4}-\d{2}-\d{2}T[\d:.]+Z?)/i);
+            const quotaTimestampMatch = msg.match(
+                /quotaResetTimeStamp[:\s"]+(\d{4}-\d{2}-\d{2}T[\d:.]+Z?)/i
+            );
             if (quotaTimestampMatch) {
                 const resetTime = new Date(quotaTimestampMatch[1]).getTime();
                 if (!isNaN(resetTime)) {
                     resetMs = resetTime - Date.now();
                     // Even if expired or 0, we found a timestamp, so rely on it.
                     // But if it's negative, it means "now", so treat as small wait.
-                    logger.debug(`[CloudCode] Parsed quotaResetTimeStamp: ${quotaTimestampMatch[1]} (Delta: ${resetMs}ms)`);
+                    logger.debug(
+                        `[CloudCode] Parsed quotaResetTimeStamp: ${quotaTimestampMatch[1]} (Delta: ${resetMs}ms)`
+                    );
                 }
             }
         }
@@ -103,16 +109,20 @@ export function parseResetTime(responseOrError, errorText = '') {
         // Try to extract "retry-after-ms" or "retryDelay" - check seconds format first (e.g. "7739.23s")
         // Added stricter regex to avoid partial matches
         if (!resetMs) {
-             const secMatch = msg.match(/(?:retry[-_]?after[-_]?ms|retryDelay)[:\s"]+([\d.]+)(?:s\b|s")/i);
-             if (secMatch) {
-                 resetMs = Math.ceil(parseFloat(secMatch[1]) * 1000);
-                 logger.debug(`[CloudCode] Parsed retry seconds from body (precise): ${resetMs}ms`);
-             }
+            const secMatch = msg.match(
+                /(?:retry[-_]?after[-_]?ms|retryDelay)[:\s"]+([\d.]+)(?:s\b|s")/i
+            );
+            if (secMatch) {
+                resetMs = Math.ceil(parseFloat(secMatch[1]) * 1000);
+                logger.debug(`[CloudCode] Parsed retry seconds from body (precise): ${resetMs}ms`);
+            }
         }
 
         if (!resetMs) {
             // Check for ms (explicit "ms" suffix or implicit if no suffix)
-            const msMatch = msg.match(/(?:retry[-_]?after[-_]?ms|retryDelay)[:\s"]+(\d+)(?:\s*ms)?(?![\w.])/i);
+            const msMatch = msg.match(
+                /(?:retry[-_]?after[-_]?ms|retryDelay)[:\s"]+(\d+)(?:\s*ms)?(?![\w.])/i
+            );
             if (msMatch) {
                 resetMs = parseInt(msMatch[1], 10);
                 logger.debug(`[CloudCode] Parsed retry-after-ms from body: ${resetMs}ms`);
@@ -145,7 +155,9 @@ export function parseResetTime(responseOrError, errorText = '') {
                     resetMs = parseInt(durationMatch[6], 10) * 1000;
                 }
                 if (resetMs) {
-                    logger.debug(`[CloudCode] Parsed duration from body: ${formatDuration(resetMs)}`);
+                    logger.debug(
+                        `[CloudCode] Parsed duration from body: ${formatDuration(resetMs)}`
+                    );
                 }
             }
         }

@@ -42,7 +42,9 @@ export function createStrategy(strategyName, config = {}) {
             return new HybridStrategy(config);
 
         default:
-            logger.warn(`[Strategy] Unknown strategy "${strategyName}", falling back to ${DEFAULT_STRATEGY}`);
+            logger.warn(
+                `[Strategy] Unknown strategy "${strategyName}", falling back to ${DEFAULT_STRATEGY}`
+            );
             return new HybridStrategy(config);
     }
 }

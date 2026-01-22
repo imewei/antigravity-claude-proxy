@@ -17,20 +17,19 @@ async function runTests() {
     console.log('╚══════════════════════════════════════════════════════════════╝\n');
 
     // Dynamic imports for ESM modules
-    const { HealthTracker } = await import('../src/account-manager/strategies/trackers/health-tracker.js');
-    const { TokenBucketTracker } = await import('../src/account-manager/strategies/trackers/token-bucket-tracker.js');
-    const { QuotaTracker } = await import('../src/account-manager/strategies/trackers/quota-tracker.js');
+    const { HealthTracker } =
+        await import('../src/account-manager/strategies/trackers/health-tracker.js');
+    const { TokenBucketTracker } =
+        await import('../src/account-manager/strategies/trackers/token-bucket-tracker.js');
+    const { QuotaTracker } =
+        await import('../src/account-manager/strategies/trackers/quota-tracker.js');
     const { StickyStrategy } = await import('../src/account-manager/strategies/sticky-strategy.js');
-    const { RoundRobinStrategy } = await import('../src/account-manager/strategies/round-robin-strategy.js');
+    const { RoundRobinStrategy } =
+        await import('../src/account-manager/strategies/round-robin-strategy.js');
     const { HybridStrategy } = await import('../src/account-manager/strategies/hybrid-strategy.js');
     const { BaseStrategy } = await import('../src/account-manager/strategies/base-strategy.js');
-    const {
-        createStrategy,
-        isValidStrategy,
-        getStrategyLabel,
-        STRATEGY_NAMES,
-        DEFAULT_STRATEGY
-    } = await import('../src/account-manager/strategies/index.js');
+    const { createStrategy, isValidStrategy, getStrategyLabel, STRATEGY_NAMES, DEFAULT_STRATEGY } =
+        await import('../src/account-manager/strategies/index.js');
 
     let passed = 0;
     let failed = 0;
@@ -55,7 +54,9 @@ async function runTests() {
 
     function assertDeepEqual(actual, expected, message = '') {
         if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-            throw new Error(`${message}\nExpected: ${JSON.stringify(expected, null, 2)}\nActual: ${JSON.stringify(actual, null, 2)}`);
+            throw new Error(
+                `${message}\nExpected: ${JSON.stringify(expected, null, 2)}\nActual: ${JSON.stringify(actual, null, 2)}`
+            );
         }
     }
 
@@ -89,7 +90,7 @@ async function runTests() {
             email: `account${i + 1}@example.com`,
             enabled: true,
             isInvalid: false,
-            lastUsed: Date.now() - (i * 60000), // Stagger by 1 minute
+            lastUsed: Date.now() - i * 60000, // Stagger by 1 minute
             modelRateLimits: {},
             ...options
         }));
@@ -255,7 +256,7 @@ async function runTests() {
     test('TokenBucketTracker: refund increases tokens', () => {
         const tracker = new TokenBucketTracker({ initialTokens: 5, maxTokens: 10 });
         tracker.consume('test@example.com'); // 5 -> 4
-        tracker.refund('test@example.com');  // 4 -> 5
+        tracker.refund('test@example.com'); // 4 -> 5
         assertEqual(tracker.getTokens('test@example.com'), 5, 'Refund should restore token');
     });
 
@@ -294,7 +295,7 @@ async function runTests() {
         const account = {
             email: 'test@example.com',
             quota: {
-                models: { 'model': { remainingFraction: 0.75 } },
+                models: { model: { remainingFraction: 0.75 } },
                 lastChecked: Date.now()
             }
         };
@@ -328,7 +329,10 @@ async function runTests() {
     test('QuotaTracker: isQuotaCritical returns false for unknown quota', () => {
         const tracker = new QuotaTracker({ criticalThreshold: 0.05 });
         const account = { email: 'test@example.com' };
-        assertFalse(tracker.isQuotaCritical(account, 'model'), 'Unknown quota should not be critical');
+        assertFalse(
+            tracker.isQuotaCritical(account, 'model'),
+            'Unknown quota should not be critical'
+        );
     });
 
     test('QuotaTracker: isQuotaCritical returns true when quota <= threshold', () => {
@@ -336,7 +340,7 @@ async function runTests() {
         const account = {
             email: 'test@example.com',
             quota: {
-                models: { 'model': { remainingFraction: 0.04 } },
+                models: { model: { remainingFraction: 0.04 } },
                 lastChecked: Date.now()
             }
         };
@@ -348,11 +352,14 @@ async function runTests() {
         const account = {
             email: 'test@example.com',
             quota: {
-                models: { 'model': { remainingFraction: 0.10 } },
+                models: { model: { remainingFraction: 0.1 } },
                 lastChecked: Date.now()
             }
         };
-        assertFalse(tracker.isQuotaCritical(account, 'model'), 'Higher quota should not be critical');
+        assertFalse(
+            tracker.isQuotaCritical(account, 'model'),
+            'Higher quota should not be critical'
+        );
     });
 
     test('QuotaTracker: isQuotaCritical returns false for stale data', () => {
@@ -360,19 +367,22 @@ async function runTests() {
         const account = {
             email: 'test@example.com',
             quota: {
-                models: { 'model': { remainingFraction: 0.01 } },
+                models: { model: { remainingFraction: 0.01 } },
                 lastChecked: Date.now() - 600000 // 10 min ago (stale)
             }
         };
-        assertFalse(tracker.isQuotaCritical(account, 'model'), 'Stale critical data should be ignored');
+        assertFalse(
+            tracker.isQuotaCritical(account, 'model'),
+            'Stale critical data should be ignored'
+        );
     });
 
     test('QuotaTracker: isQuotaLow returns true for low but not critical quota', () => {
-        const tracker = new QuotaTracker({ lowThreshold: 0.10, criticalThreshold: 0.05 });
+        const tracker = new QuotaTracker({ lowThreshold: 0.1, criticalThreshold: 0.05 });
         const account = {
             email: 'test@example.com',
             quota: {
-                models: { 'model': { remainingFraction: 0.08 } },
+                models: { model: { remainingFraction: 0.08 } },
                 lastChecked: Date.now()
             }
         };
@@ -380,11 +390,11 @@ async function runTests() {
     });
 
     test('QuotaTracker: isQuotaLow returns false for critical quota', () => {
-        const tracker = new QuotaTracker({ lowThreshold: 0.10, criticalThreshold: 0.05 });
+        const tracker = new QuotaTracker({ lowThreshold: 0.1, criticalThreshold: 0.05 });
         const account = {
             email: 'test@example.com',
             quota: {
-                models: { 'model': { remainingFraction: 0.03 } },
+                models: { model: { remainingFraction: 0.03 } },
                 lastChecked: Date.now()
             }
         };
@@ -394,7 +404,11 @@ async function runTests() {
     test('QuotaTracker: getScore returns unknownScore for missing quota', () => {
         const tracker = new QuotaTracker({ unknownScore: 50 });
         const account = { email: 'test@example.com' };
-        assertEqual(tracker.getScore(account, 'model'), 50, 'Unknown quota should return default score');
+        assertEqual(
+            tracker.getScore(account, 'model'),
+            50,
+            'Unknown quota should return default score'
+        );
     });
 
     test('QuotaTracker: getScore returns 0-100 based on fraction', () => {
@@ -402,7 +416,7 @@ async function runTests() {
         const account = {
             email: 'test@example.com',
             quota: {
-                models: { 'model': { remainingFraction: 0.75 } },
+                models: { model: { remainingFraction: 0.75 } },
                 lastChecked: Date.now()
             }
         };
@@ -414,7 +428,7 @@ async function runTests() {
         const account = {
             email: 'test@example.com',
             quota: {
-                models: { 'model': { remainingFraction: 1.0 } },
+                models: { model: { remainingFraction: 1.0 } },
                 lastChecked: Date.now() - 600000 // 10 min ago
             }
         };
@@ -438,7 +452,9 @@ async function runTests() {
     test('BaseStrategy: isAccountUsable returns false for null account', () => {
         // Create a minimal subclass to test
         class TestStrategy extends BaseStrategy {
-            selectAccount() { return { account: null, index: 0 }; }
+            selectAccount() {
+                return { account: null, index: 0 };
+            }
         }
         const strategy = new TestStrategy();
         assertFalse(strategy.isAccountUsable(null, 'model'), 'Null account should not be usable');
@@ -446,25 +462,37 @@ async function runTests() {
 
     test('BaseStrategy: isAccountUsable returns false for invalid account', () => {
         class TestStrategy extends BaseStrategy {
-            selectAccount() { return { account: null, index: 0 }; }
+            selectAccount() {
+                return { account: null, index: 0 };
+            }
         }
         const strategy = new TestStrategy();
         const account = { email: 'test@example.com', isInvalid: true };
-        assertFalse(strategy.isAccountUsable(account, 'model'), 'Invalid account should not be usable');
+        assertFalse(
+            strategy.isAccountUsable(account, 'model'),
+            'Invalid account should not be usable'
+        );
     });
 
     test('BaseStrategy: isAccountUsable returns false for disabled account', () => {
         class TestStrategy extends BaseStrategy {
-            selectAccount() { return { account: null, index: 0 }; }
+            selectAccount() {
+                return { account: null, index: 0 };
+            }
         }
         const strategy = new TestStrategy();
         const account = { email: 'test@example.com', enabled: false };
-        assertFalse(strategy.isAccountUsable(account, 'model'), 'Disabled account should not be usable');
+        assertFalse(
+            strategy.isAccountUsable(account, 'model'),
+            'Disabled account should not be usable'
+        );
     });
 
     test('BaseStrategy: isAccountUsable returns false for rate-limited model', () => {
         class TestStrategy extends BaseStrategy {
-            selectAccount() { return { account: null, index: 0 }; }
+            selectAccount() {
+                return { account: null, index: 0 };
+            }
         }
         const strategy = new TestStrategy();
         const account = {
@@ -476,12 +504,17 @@ async function runTests() {
                 }
             }
         };
-        assertFalse(strategy.isAccountUsable(account, 'claude-sonnet'), 'Rate-limited model should not be usable');
+        assertFalse(
+            strategy.isAccountUsable(account, 'claude-sonnet'),
+            'Rate-limited model should not be usable'
+        );
     });
 
     test('BaseStrategy: isAccountUsable returns true for expired rate limit', () => {
         class TestStrategy extends BaseStrategy {
-            selectAccount() { return { account: null, index: 0 }; }
+            selectAccount() {
+                return { account: null, index: 0 };
+            }
         }
         const strategy = new TestStrategy();
         const account = {
@@ -493,12 +526,17 @@ async function runTests() {
                 }
             }
         };
-        assertTrue(strategy.isAccountUsable(account, 'claude-sonnet'), 'Expired rate limit should be usable');
+        assertTrue(
+            strategy.isAccountUsable(account, 'claude-sonnet'),
+            'Expired rate limit should be usable'
+        );
     });
 
     test('BaseStrategy: getUsableAccounts filters correctly', () => {
         class TestStrategy extends BaseStrategy {
-            selectAccount() { return { account: null, index: 0 }; }
+            selectAccount() {
+                return { account: null, index: 0 };
+            }
         }
         const strategy = new TestStrategy();
         const accounts = [
@@ -542,11 +580,15 @@ async function runTests() {
         const accounts = createMockAccounts(3);
         // Rate-limit account1 for 5 minutes (longer than MAX_WAIT)
         accounts[0].modelRateLimits = {
-            'model': { isRateLimited: true, resetTime: Date.now() + 300000 }
+            model: { isRateLimited: true, resetTime: Date.now() + 300000 }
         };
 
         const result = strategy.selectAccount(accounts, 'model', { currentIndex: 0 });
-        assertEqual(result.account.email, 'account2@example.com', 'Should switch to next available');
+        assertEqual(
+            result.account.email,
+            'account2@example.com',
+            'Should switch to next available'
+        );
         assertEqual(result.index, 1);
     });
 
@@ -555,7 +597,7 @@ async function runTests() {
         const accounts = createMockAccounts(1); // Only one account
         // Rate-limit for 30 seconds (less than MAX_WAIT of 2 minutes)
         accounts[0].modelRateLimits = {
-            'model': { isRateLimited: true, resetTime: Date.now() + 30000 }
+            model: { isRateLimited: true, resetTime: Date.now() + 30000 }
         };
 
         const result = strategy.selectAccount(accounts, 'model', { currentIndex: 0 });
@@ -648,7 +690,7 @@ async function runTests() {
     test('RoundRobinStrategy: returns null when all accounts unavailable', () => {
         const strategy = new RoundRobinStrategy();
         const accounts = createMockAccounts(3);
-        accounts.forEach(a => a.enabled = false);
+        accounts.forEach((a) => (a.enabled = false));
 
         const result = strategy.selectAccount(accounts, 'model');
         assertNull(result.account, 'Should return null when all unavailable');
@@ -663,7 +705,11 @@ async function runTests() {
         strategy.resetCursor();
 
         const result = strategy.selectAccount(accounts, 'model');
-        assertEqual(result.account.email, 'account2@example.com', 'Should start from beginning after reset');
+        assertEqual(
+            result.account.email,
+            'account2@example.com',
+            'Should start from beginning after reset'
+        );
     });
 
     // ==========================================================================
@@ -688,7 +734,11 @@ async function runTests() {
 
         const result = strategy.selectAccount(accounts, 'model');
         // account3 should win due to higher LRU score
-        assertEqual(result.account.email, 'account3@example.com', 'Oldest account should be selected');
+        assertEqual(
+            result.account.email,
+            'account3@example.com',
+            'Oldest account should be selected'
+        );
     });
 
     test('HybridStrategy: filters out unhealthy accounts', () => {
@@ -704,7 +754,10 @@ async function runTests() {
 
         // OLD: assertNull(result.account, 'Should filter all accounts with low health');
         // NEW: Expect fallback
-        assertTrue(result.account !== null, 'Should fallback to unhealthy account when all are unhealthy');
+        assertTrue(
+            result.account !== null,
+            'Should fallback to unhealthy account when all are unhealthy'
+        );
     });
 
     test('HybridStrategy: filters out accounts without tokens', () => {
@@ -770,7 +823,11 @@ async function runTests() {
         const tokenTracker = strategy.getTokenBucketTracker();
 
         assertEqual(healthTracker.getScore(accounts[0].email), 50, 'Health should decrease by 20');
-        assertEqual(tokenTracker.getTokens(accounts[0].email), tokensBefore + 1, 'Token should be refunded');
+        assertEqual(
+            tokenTracker.getTokens(accounts[0].email),
+            tokensBefore + 1,
+            'Token should be refunded'
+        );
     });
 
     test('HybridStrategy: scoring formula weights work correctly', () => {
@@ -788,7 +845,11 @@ async function runTests() {
 
         // Both have same health and tokens, but old-account has higher LRU
         const result = strategy.selectAccount(accounts, 'model');
-        assertEqual(result.account.email, 'old-account@example.com', 'Older account should win with LRU weight');
+        assertEqual(
+            result.account.email,
+            'old-account@example.com',
+            'Older account should win with LRU weight'
+        );
     });
 
     test('HybridStrategy: filters out accounts with critical quota', () => {
@@ -804,7 +865,7 @@ async function runTests() {
                 enabled: true,
                 lastUsed: Date.now() - 3600000, // Older (would normally win LRU)
                 quota: {
-                    models: { 'model': { remainingFraction: 0.02 } },
+                    models: { model: { remainingFraction: 0.02 } },
                     lastChecked: Date.now()
                 }
             },
@@ -816,7 +877,11 @@ async function runTests() {
         ];
 
         const result = strategy.selectAccount(accounts, 'model');
-        assertEqual(result.account.email, 'healthy@example.com', 'Critical quota account should be excluded');
+        assertEqual(
+            result.account.email,
+            'healthy@example.com',
+            'Critical quota account should be excluded'
+        );
     });
 
     test('HybridStrategy: prefers higher quota accounts', () => {
@@ -835,7 +900,7 @@ async function runTests() {
                 enabled: true,
                 lastUsed: now,
                 quota: {
-                    models: { 'model': { remainingFraction: 0.20 } },
+                    models: { model: { remainingFraction: 0.2 } },
                     lastChecked: now
                 }
             },
@@ -844,14 +909,18 @@ async function runTests() {
                 enabled: true,
                 lastUsed: now,
                 quota: {
-                    models: { 'model': { remainingFraction: 0.80 } },
+                    models: { model: { remainingFraction: 0.8 } },
                     lastChecked: now
                 }
             }
         ];
 
         const result = strategy.selectAccount(accounts, 'model');
-        assertEqual(result.account.email, 'high-quota@example.com', 'Higher quota account should be preferred');
+        assertEqual(
+            result.account.email,
+            'high-quota@example.com',
+            'Higher quota account should be preferred'
+        );
     });
 
     test('HybridStrategy: falls back when all accounts have critical quota', () => {
@@ -867,7 +936,7 @@ async function runTests() {
                 enabled: true,
                 lastUsed: Date.now() - 60000,
                 quota: {
-                    models: { 'model': { remainingFraction: 0.02 } },
+                    models: { model: { remainingFraction: 0.02 } },
                     lastChecked: Date.now()
                 }
             },
@@ -876,7 +945,7 @@ async function runTests() {
                 enabled: true,
                 lastUsed: Date.now(),
                 quota: {
-                    models: { 'model': { remainingFraction: 0.01 } },
+                    models: { model: { remainingFraction: 0.01 } },
                     lastChecked: Date.now()
                 }
             }
@@ -884,7 +953,10 @@ async function runTests() {
 
         // Should fall back and select an account even though all are critical
         const result = strategy.selectAccount(accounts, 'model');
-        assertTrue(result.account !== null, 'Should fall back to critical quota accounts when no alternatives');
+        assertTrue(
+            result.account !== null,
+            'Should fall back to critical quota accounts when no alternatives'
+        );
     });
 
     test('HybridStrategy: getQuotaTracker returns tracker', () => {
@@ -1039,7 +1111,7 @@ async function runTests() {
     }
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
     console.error('Test suite failed:', err);
     process.exit(1);
 });

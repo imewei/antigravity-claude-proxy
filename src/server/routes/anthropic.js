@@ -14,15 +14,22 @@ function parseError(error) {
     if (error.message.includes('401') || error.message.includes('UNAUTHENTICATED')) {
         errorType = 'authentication_error';
         statusCode = 401;
-        errorMessage = 'Authentication failed. Make sure Antigravity is running with a valid token.';
-    } else if (error.message.includes('429') || error.message.includes('RESOURCE_EXHAUSTED') || error.message.includes('QUOTA_EXHAUSTED')) {
-        errorType = 'invalid_request_error';  // Use invalid_request_error to force client to purge/stop
-        statusCode = 400;  // Use 400 to ensure client does not retry (429 and 529 trigger retries)
+        errorMessage =
+            'Authentication failed. Make sure Antigravity is running with a valid token.';
+    } else if (
+        error.message.includes('429') ||
+        error.message.includes('RESOURCE_EXHAUSTED') ||
+        error.message.includes('QUOTA_EXHAUSTED')
+    ) {
+        errorType = 'invalid_request_error'; // Use invalid_request_error to force client to purge/stop
+        statusCode = 400; // Use 400 to ensure client does not retry (429 and 529 trigger retries)
 
         // Try to extract the quota reset time from the error
         const resetMatch = error.message.match(/quota will reset after ([\dh\dm\ds]+)/i);
         // Try to extract model from our error format "Rate limited on <model>" or JSON format
-        const modelMatch = error.message.match(/Rate limited on ([^.]+)\./) || error.message.match(/"model":\s*"([^"]+)"/);
+        const modelMatch =
+            error.message.match(/Rate limited on ([^.]+)\./) ||
+            error.message.match(/"model":\s*"([^"]+)"/);
         const model = modelMatch ? modelMatch[1] : 'the model';
 
         if (resetMatch) {
@@ -30,7 +37,10 @@ function parseError(error) {
         } else {
             errorMessage = `You have exhausted your capacity on ${model}. Please wait for your quota to reset.`;
         }
-    } else if (error.message.includes('invalid_request_error') || error.message.includes('INVALID_ARGUMENT')) {
+    } else if (
+        error.message.includes('invalid_request_error') ||
+        error.message.includes('INVALID_ARGUMENT')
+    ) {
         errorType = 'invalid_request_error';
         statusCode = 400;
         const msgMatch = error.message.match(/"message":"([^"]+)"/);
@@ -67,7 +77,8 @@ export function createAnthropicRouter({ accountManager, ensureInitialized, fallb
             type: 'error',
             error: {
                 type: 'not_implemented',
-                message: 'Token counting is not implemented. Use /v1/messages with max_tokens or configure your client to skip token counting.'
+                message:
+                    'Token counting is not implemented. Use /v1/messages with max_tokens or configure your client to skip token counting.'
             }
         });
     });
@@ -108,7 +119,9 @@ export function createAnthropicRouter({ accountManager, ensureInitialized, fallb
 
             // Optimistic Retry: If ALL accounts are rate-limited for this model, reset them to force a fresh check.
             if (accountManager.isAllRateLimited(modelId)) {
-                logger.warn(`[Server] All accounts rate-limited for ${modelId}. Resetting state for optimistic retry.`);
+                logger.warn(
+                    `[Server] All accounts rate-limited for ${modelId}. Resetting state for optimistic retry.`
+                );
                 accountManager.resetAllRateLimits();
             }
 
@@ -144,8 +157,10 @@ export function createAnthropicRouter({ accountManager, ensureInitialized, fallb
                 logger.debug('[API] Message structure:');
                 messages.forEach((msg, i) => {
                     const contentTypes = Array.isArray(msg.content)
-                        ? msg.content.map(c => c.type || 'text').join(', ')
-                        : (typeof msg.content === 'string' ? 'text' : 'unknown');
+                        ? msg.content.map((c) => c.type || 'text').join(', ')
+                        : typeof msg.content === 'string'
+                          ? 'text'
+                          : 'unknown';
                     logger.debug(`  [${i}] ${msg.role}: ${contentTypes}`);
                 });
             }
@@ -174,7 +189,12 @@ export function createAnthropicRouter({ accountManager, ensureInitialized, fallb
 
                 try {
                     // Use the streaming generator with account manager
-                    for await (const event of sendMessageStream(request, accountManager, fallbackEnabled, signal)) {
+                    for await (const event of sendMessageStream(
+                        request,
+                        accountManager,
+                        fallbackEnabled,
+                        signal
+                    )) {
                         if (signal.aborted) break;
                         res.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
                         // Flush after each event for real-time streaming
@@ -182,9 +202,11 @@ export function createAnthropicRouter({ accountManager, ensureInitialized, fallb
                     }
                     res.write('event: ping\ndata: {}\n\n'); // Keep alive
                     res.end();
-
                 } catch (streamError) {
-                    if (streamError.name === 'AbortError' || streamError.message.includes('aborted')) {
+                    if (
+                        streamError.name === 'AbortError' ||
+                        streamError.message.includes('aborted')
+                    ) {
                         logger.info('[API] Stream aborted by client');
                         res.end();
                         return;
@@ -204,22 +226,25 @@ export function createAnthropicRouter({ accountManager, ensureInitialized, fallb
                     // If we haven't sent any events yet, we can send a proper JSON error
                     // But if we're streaming, we should send an SSE error event
                     if (!res.headersSent) {
-                        res.status(statusCode).json({ type: 'error', error: { type: errorType, message: errorMessage } });
-                    } else {
-                        res.write(`event: error\ndata: ${JSON.stringify({
+                        res.status(statusCode).json({
                             type: 'error',
                             error: { type: errorType, message: errorMessage }
-                        })}\n\n`);
+                        });
+                    } else {
+                        res.write(
+                            `event: error\ndata: ${JSON.stringify({
+                                type: 'error',
+                                error: { type: errorType, message: errorMessage }
+                            })}\n\n`
+                        );
                     }
                     res.end();
                 }
-
             } else {
                 // Handle non-streaming response
                 const response = await sendMessage(request, accountManager, fallbackEnabled);
                 res.json(response);
             }
-
         } catch (error) {
             logger.error('[API] Error handling message request:', error);
             const { errorType, statusCode, errorMessage } = parseError(error);

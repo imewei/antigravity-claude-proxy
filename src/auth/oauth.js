@@ -30,7 +30,7 @@ export function parseRefreshParts(refresh) {
     return {
         refreshToken,
         projectId: projectId || undefined,
-        managedProjectId: managedProjectId || undefined,
+        managedProjectId: managedProjectId || undefined
     };
 }
 
@@ -51,10 +51,7 @@ export function formatRefreshParts(parts) {
  */
 function generatePKCE() {
     const verifier = crypto.randomBytes(32).toString('base64url');
-    const challenge = crypto
-        .createHash('sha256')
-        .update(verifier)
-        .digest('base64url');
+    const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
     return { verifier, challenge };
 }
 
@@ -231,7 +228,11 @@ export function startCallbackServer(expectedState, timeoutMs = 120000) {
 
         server.on('error', (err) => {
             if (err.code === 'EADDRINUSE') {
-                reject(new Error(`Port ${OAUTH_CONFIG.callbackPort} is already in use. Close any other OAuth flows and try again.`));
+                reject(
+                    new Error(
+                        `Port ${OAUTH_CONFIG.callbackPort} is already in use. Close any other OAuth flows and try again.`
+                    )
+                );
             } else {
                 reject(err);
             }
@@ -285,7 +286,9 @@ export async function exchangeCode(code, verifier) {
         throw new Error('No access token received');
     }
 
-    logger.info(`[OAuth] Token exchange successful, access_token length: ${tokens.access_token?.length}`);
+    logger.info(
+        `[OAuth] Token exchange successful, access_token length: ${tokens.access_token?.length}`
+    );
 
     return {
         accessToken: tokens.access_token,
@@ -313,7 +316,7 @@ export async function refreshAccessToken(compositeRefresh) {
         body: new URLSearchParams({
             client_id: OAUTH_CONFIG.clientId,
             client_secret: OAUTH_CONFIG.clientSecret,
-            refresh_token: parts.refreshToken,  // Use the actual OAuth token
+            refresh_token: parts.refreshToken, // Use the actual OAuth token
             grant_type: 'refresh_token'
         })
     });
@@ -339,7 +342,7 @@ export async function refreshAccessToken(compositeRefresh) {
 export async function getUserEmail(accessToken) {
     const response = await fetch(OAUTH_CONFIG.userInfoUrl, {
         headers: {
-            'Authorization': `Bearer ${accessToken}`
+            Authorization: `Bearer ${accessToken}`
         }
     });
 
@@ -367,7 +370,7 @@ export async function discoverProjectId(accessToken) {
             const response = await fetch(`${endpoint}/v1internal:loadCodeAssist`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${accessToken}`,
+                    Authorization: `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
                     ...LOAD_CODE_ASSIST_HEADERS
                 },

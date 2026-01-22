@@ -103,7 +103,11 @@ window.Components.claudeConfig = () => ({
     async fetchConfig() {
         const password = Alpine.store('global').webuiPassword;
         try {
-            const { response, newPassword } = await window.utils.request('/api/claude/config', {}, password);
+            const { response, newPassword } = await window.utils.request(
+                '/api/claude/config',
+                {},
+                password
+            );
             if (newPassword) Alpine.store('global').webuiPassword = newPassword;
 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -119,7 +123,7 @@ window.Components.claudeConfig = () => ({
 
             // Detect existing [1m] suffix state, default to true
             const hasExistingSuffix = this.detectGemini1mSuffix();
-            const hasGeminiModels = this.geminiModelFields.some(f =>
+            const hasGeminiModels = this.geminiModelFields.some((f) =>
                 this.config.env[f]?.toLowerCase().includes('gemini')
             );
 
@@ -138,17 +142,27 @@ window.Components.claudeConfig = () => ({
         this.loading = true;
         const password = Alpine.store('global').webuiPassword;
         try {
-            const { response, newPassword } = await window.utils.request('/api/claude/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(this.config)
-            }, password);
+            const { response, newPassword } = await window.utils.request(
+                '/api/claude/config',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.config)
+                },
+                password
+            );
             if (newPassword) Alpine.store('global').webuiPassword = newPassword;
 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            Alpine.store('global').showToast(Alpine.store('global').t('claudeConfigSaved'), 'success');
+            Alpine.store('global').showToast(
+                Alpine.store('global').t('claudeConfigSaved'),
+                'success'
+            );
         } catch (e) {
-            Alpine.store('global').showToast(Alpine.store('global').t('saveConfigFailed') + ': ' + e.message, 'error');
+            Alpine.store('global').showToast(
+                Alpine.store('global').t('saveConfigFailed') + ': ' + e.message,
+                'error'
+            );
         } finally {
             this.loading = false;
         }
@@ -162,14 +176,21 @@ window.Components.claudeConfig = () => ({
         this.restoring = true;
         const password = Alpine.store('global').webuiPassword;
         try {
-            const { response, newPassword } = await window.utils.request('/api/claude/config/restore', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            }, password);
+            const { response, newPassword } = await window.utils.request(
+                '/api/claude/config/restore',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                },
+                password
+            );
             if (newPassword) Alpine.store('global').webuiPassword = newPassword;
 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            Alpine.store('global').showToast(Alpine.store('global').t('claudeConfigRestored'), 'success');
+            Alpine.store('global').showToast(
+                Alpine.store('global').t('claudeConfigRestored'),
+                'success'
+            );
 
             // Close modal
             document.getElementById('restore_defaults_modal').close();
@@ -177,7 +198,10 @@ window.Components.claudeConfig = () => ({
             // Reload the config to reflect the changes
             await this.fetchConfig();
         } catch (e) {
-            Alpine.store('global').showToast(Alpine.store('global').t('restoreConfigFailed') + ': ' + e.message, 'error');
+            Alpine.store('global').showToast(
+                Alpine.store('global').t('restoreConfigFailed') + ': ' + e.message,
+                'error'
+            );
         } finally {
             this.restoring = false;
         }
@@ -193,7 +217,11 @@ window.Components.claudeConfig = () => ({
     async fetchPresets() {
         const password = Alpine.store('global').webuiPassword;
         try {
-            const { response, newPassword } = await window.utils.request('/api/claude/presets', {}, password);
+            const { response, newPassword } = await window.utils.request(
+                '/api/claude/presets',
+                {},
+                password
+            );
             if (newPassword) Alpine.store('global').webuiPassword = newPassword;
 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -214,7 +242,7 @@ window.Components.claudeConfig = () => ({
      * Load the selected preset into the form (does not save to Claude CLI)
      */
     loadSelectedPreset() {
-        const preset = this.presets.find(p => p.name === this.selectedPresetName);
+        const preset = this.presets.find((p) => p.name === this.selectedPresetName);
         if (!preset) {
             return;
         }
@@ -226,7 +254,8 @@ window.Components.claudeConfig = () => ({
         this.gemini1mSuffix = this.detectGemini1mSuffix();
 
         Alpine.store('global').showToast(
-            Alpine.store('global').t('presetLoaded') || `Preset "${preset.name}" loaded. Click "Apply to Claude CLI" to save.`,
+            Alpine.store('global').t('presetLoaded') ||
+                `Preset "${preset.name}" loaded. Click "Apply to Claude CLI" to save.`,
             'success'
         );
     },
@@ -318,7 +347,10 @@ window.Components.claudeConfig = () => ({
      */
     async executeSavePreset(name) {
         if (!name || !name.trim()) {
-            Alpine.store('global').showToast(Alpine.store('global').t('presetNameRequired'), 'error');
+            Alpine.store('global').showToast(
+                Alpine.store('global').t('presetNameRequired'),
+                'error'
+            );
             return;
         }
 
@@ -338,17 +370,21 @@ window.Components.claudeConfig = () => ({
                 'ENABLE_EXPERIMENTAL_MCP_CLI'
             ];
             const presetConfig = {};
-            relevantKeys.forEach(k => {
+            relevantKeys.forEach((k) => {
                 if (this.config.env[k]) {
                     presetConfig[k] = this.config.env[k];
                 }
             });
 
-            const { response, newPassword } = await window.utils.request('/api/claude/presets', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: name.trim(), config: presetConfig })
-            }, password);
+            const { response, newPassword } = await window.utils.request(
+                '/api/claude/presets',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name.trim(), config: presetConfig })
+                },
+                password
+            );
             if (newPassword) Alpine.store('global').webuiPassword = newPassword;
 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -366,7 +402,10 @@ window.Components.claudeConfig = () => ({
                 throw new Error(data.error || Alpine.store('global').t('saveFailed'));
             }
         } catch (e) {
-            Alpine.store('global').showToast(Alpine.store('global').t('failedToSavePreset') + ': ' + e.message, 'error');
+            Alpine.store('global').showToast(
+                Alpine.store('global').t('failedToSavePreset') + ': ' + e.message,
+                'error'
+            );
         } finally {
             this.savingPreset = false;
         }
@@ -377,12 +416,17 @@ window.Components.claudeConfig = () => ({
      */
     async deleteSelectedPreset() {
         if (!this.selectedPresetName) {
-            Alpine.store('global').showToast(Alpine.store('global').t('noPresetSelected'), 'warning');
+            Alpine.store('global').showToast(
+                Alpine.store('global').t('noPresetSelected'),
+                'warning'
+            );
             return;
         }
 
         // Confirm deletion
-        const confirmMsg = Alpine.store('global').t('deletePresetConfirm', { name: this.selectedPresetName });
+        const confirmMsg = Alpine.store('global').t('deletePresetConfirm', {
+            name: this.selectedPresetName
+        });
         if (!confirm(confirmMsg)) {
             return;
         }
@@ -412,7 +456,10 @@ window.Components.claudeConfig = () => ({
                 throw new Error(data.error || Alpine.store('global').t('deleteFailed'));
             }
         } catch (e) {
-            Alpine.store('global').showToast(Alpine.store('global').t('failedToDeletePreset') + ': ' + e.message, 'error');
+            Alpine.store('global').showToast(
+                Alpine.store('global').t('failedToDeletePreset') + ': ' + e.message,
+                'error'
+            );
         } finally {
             this.deletingPreset = false;
         }

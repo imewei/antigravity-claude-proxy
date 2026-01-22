@@ -18,7 +18,15 @@ import { fileURLToPath } from 'url';
 import express from 'express';
 import { getPublicConfig, saveConfig, config } from '../config.js';
 import { DEFAULT_PORT, ACCOUNT_CONFIG_PATH, MAX_ACCOUNTS } from '../constants.js';
-import { readClaudeConfig, updateClaudeConfig, replaceClaudeConfig, getClaudeConfigPath, readPresets, savePreset, deletePreset } from '../utils/claude-config.js';
+import {
+    readClaudeConfig,
+    updateClaudeConfig,
+    replaceClaudeConfig,
+    getClaudeConfigPath,
+    readPresets,
+    savePreset,
+    deletePreset
+} from '../utils/claude-config.js';
 import { logger } from '../utils/logger.js';
 import { getAuthorizationUrl, completeOAuthFlow, startCallbackServer } from '../auth/oauth.js';
 import { loadAccounts, saveAccounts } from '../account-manager/storage.js';
@@ -50,7 +58,7 @@ const pendingOAuthFlows = new Map();
  */
 async function setAccountEnabled(email, enabled) {
     const { accounts, settings, activeIndex } = await loadAccounts(ACCOUNT_CONFIG_PATH);
-    const account = accounts.find(a => a.email === email);
+    const account = accounts.find((a) => a.email === email);
     if (!account) {
         throw new Error(`Account ${email} not found`);
     }
@@ -64,13 +72,14 @@ async function setAccountEnabled(email, enabled) {
  */
 async function removeAccount(email) {
     const { accounts, settings, activeIndex } = await loadAccounts(ACCOUNT_CONFIG_PATH);
-    const index = accounts.findIndex(a => a.email === email);
+    const index = accounts.findIndex((a) => a.email === email);
     if (index === -1) {
         throw new Error(`Account ${email} not found`);
     }
     accounts.splice(index, 1);
     // Adjust activeIndex if needed
-    const newActiveIndex = activeIndex >= accounts.length ? Math.max(0, accounts.length - 1) : activeIndex;
+    const newActiveIndex =
+        activeIndex >= accounts.length ? Math.max(0, accounts.length - 1) : activeIndex;
     await saveAccounts(ACCOUNT_CONFIG_PATH, accounts, settings, newActiveIndex);
     logger.info(`[WebUI] Account ${email} removed`);
 }
@@ -83,7 +92,7 @@ async function addAccount(accountData) {
     const { accounts, settings, activeIndex } = await loadAccounts(ACCOUNT_CONFIG_PATH);
 
     // Check if account already exists
-    const existingIndex = accounts.findIndex(a => a.email === accountData.email);
+    const existingIndex = accounts.findIndex((a) => a.email === accountData.email);
     if (existingIndex !== -1) {
         // Update existing account
         accounts[existingIndex] = {
@@ -98,7 +107,9 @@ async function addAccount(accountData) {
     } else {
         // Check MAX_ACCOUNTS limit before adding new account
         if (accounts.length >= MAX_ACCOUNTS) {
-            throw new Error(`Maximum of ${MAX_ACCOUNTS} accounts reached. Update maxAccounts in config to increase the limit.`);
+            throw new Error(
+                `Maximum of ${MAX_ACCOUNTS} accounts reached. Update maxAccounts in config to increase the limit.`
+            );
         }
         // Add new account
         accounts.push({
@@ -128,12 +139,17 @@ function createAuthMiddleware() {
         // Determine if this path should be protected
         const isApiRoute = req.path.startsWith('/api/');
         const isException = req.path === '/api/auth/url' || req.path === '/api/config';
-        const isProtected = (isApiRoute && !isException) || req.path === '/account-limits' || req.path === '/health';
+        const isProtected =
+            (isApiRoute && !isException) ||
+            req.path === '/account-limits' ||
+            req.path === '/health';
 
         if (isProtected) {
             const providedPassword = req.headers['x-webui-password'] || req.query.password;
             if (providedPassword !== password) {
-                return res.status(401).json({ status: 'error', error: 'Unauthorized: Password required' });
+                return res
+                    .status(401)
+                    .json({ status: 'error', error: 'Unauthorized: Password required' });
             }
         }
         next();
@@ -204,7 +220,9 @@ export function mountWebUI(app, dirname, accountManager) {
             const { enabled } = req.body;
 
             if (typeof enabled !== 'boolean') {
-                return res.status(400).json({ status: 'error', error: 'enabled must be a boolean' });
+                return res
+                    .status(400)
+                    .json({ status: 'error', error: 'enabled must be a boolean' });
             }
 
             await setAccountEnabled(email, enabled);
@@ -316,7 +334,18 @@ export function mountWebUI(app, dirname, accountManager) {
      */
     app.post('/api/config', (req, res) => {
         try {
-            const { debug, logLevel, maxRetries, retryBaseMs, retryMaxMs, persistTokenCache, defaultCooldownMs, maxWaitBeforeErrorMs, maxAccounts, accountSelection } = req.body;
+            const {
+                debug,
+                logLevel,
+                maxRetries,
+                retryBaseMs,
+                retryMaxMs,
+                persistTokenCache,
+                defaultCooldownMs,
+                maxWaitBeforeErrorMs,
+                maxAccounts,
+                accountSelection
+            } = req.body;
 
             // Only allow updating specific fields (security)
             const updates = {};
@@ -336,10 +365,18 @@ export function mountWebUI(app, dirname, accountManager) {
             if (typeof persistTokenCache === 'boolean') {
                 updates.persistTokenCache = persistTokenCache;
             }
-            if (typeof defaultCooldownMs === 'number' && defaultCooldownMs >= 1000 && defaultCooldownMs <= 300000) {
+            if (
+                typeof defaultCooldownMs === 'number' &&
+                defaultCooldownMs >= 1000 &&
+                defaultCooldownMs <= 300000
+            ) {
                 updates.defaultCooldownMs = defaultCooldownMs;
             }
-            if (typeof maxWaitBeforeErrorMs === 'number' && maxWaitBeforeErrorMs >= 0 && maxWaitBeforeErrorMs <= 600000) {
+            if (
+                typeof maxWaitBeforeErrorMs === 'number' &&
+                maxWaitBeforeErrorMs >= 0 &&
+                maxWaitBeforeErrorMs <= 600000
+            ) {
                 updates.maxWaitBeforeErrorMs = maxWaitBeforeErrorMs;
             }
             if (typeof maxAccounts === 'number' && maxAccounts >= 1 && maxAccounts <= 100) {
@@ -348,7 +385,10 @@ export function mountWebUI(app, dirname, accountManager) {
             // Account selection strategy validation
             if (accountSelection && typeof accountSelection === 'object') {
                 const validStrategies = ['sticky', 'round-robin', 'hybrid'];
-                if (accountSelection.strategy && validStrategies.includes(accountSelection.strategy)) {
+                if (
+                    accountSelection.strategy &&
+                    validStrategies.includes(accountSelection.strategy)
+                ) {
                     updates.accountSelection = {
                         ...(config.accountSelection || {}),
                         strategy: accountSelection.strategy
@@ -518,7 +558,9 @@ export function mountWebUI(app, dirname, accountManager) {
             // Use replaceClaudeConfig to completely overwrite the config (not merge)
             const newConfig = await replaceClaudeConfig(claudeConfig);
 
-            logger.info(`[WebUI] Restored Claude CLI config to defaults at ${getClaudeConfigPath()}`);
+            logger.info(
+                `[WebUI] Restored Claude CLI config to defaults at ${getClaudeConfigPath()}`
+            );
 
             res.json({
                 status: 'ok',
@@ -557,7 +599,9 @@ export function mountWebUI(app, dirname, accountManager) {
                 return res.status(400).json({ status: 'error', error: 'Preset name is required' });
             }
             if (!presetConfig || typeof presetConfig !== 'object') {
-                return res.status(400).json({ status: 'error', error: 'Config object is required' });
+                return res
+                    .status(400)
+                    .json({ status: 'error', error: 'Config object is required' });
             }
 
             const presets = await savePreset(name.trim(), presetConfig);
@@ -648,7 +692,7 @@ export function mountWebUI(app, dirname, accountManager) {
         // Send recent history if requested
         if (req.query.history === 'true' && logger.getHistory) {
             const history = logger.getHistory();
-            history.forEach(log => sendLog(log));
+            history.forEach((log) => sendLog(log));
         }
 
         // Subscribe to new logs

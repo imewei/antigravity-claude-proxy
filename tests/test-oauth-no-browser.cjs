@@ -160,7 +160,8 @@ async function runTests() {
 
     await test('Throw on OAuth error in URL', () => {
         try {
-            const input = 'http://localhost:51121/?error=access_denied&error_description=User%20denied';
+            const input =
+                'http://localhost:51121/?error=access_denied&error_description=User%20denied';
             extractCodeFromInput(input);
             return { passed: false, message: 'Should have thrown' };
         } catch (e) {
@@ -200,8 +201,8 @@ async function runTests() {
     console.log('SUMMARY');
     console.log('='.repeat(60));
 
-    const passed = results.filter(r => r.passed).length;
-    const failed = results.filter(r => !r.passed).length;
+    const passed = results.filter((r) => r.passed).length;
+    const failed = results.filter((r) => !r.passed).length;
     console.log(`  Total: ${results.length} | Passed: ${passed} | Failed: ${failed}`);
 
     console.log('\n' + '='.repeat(60));
@@ -211,7 +212,7 @@ async function runTests() {
     process.exit(allPassed ? 0 : 1);
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
     console.error('Test suite failed:', err);
     process.exit(1);
 });

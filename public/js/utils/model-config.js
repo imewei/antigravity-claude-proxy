@@ -10,15 +10,19 @@ window.ModelConfigUtils = window.ModelConfigUtils || {};
  * @param {object} configUpdates - Configuration updates (pinned, hidden, alias, mapping)
  * @returns {Promise<void>}
  */
-window.ModelConfigUtils.updateModelConfig = async function(modelId, configUpdates) {
+window.ModelConfigUtils.updateModelConfig = async function (modelId, configUpdates) {
     return window.ErrorHandler.safeAsync(async () => {
         const store = Alpine.store('global');
 
-        const { response, newPassword } = await window.utils.request('/api/models/config', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ modelId, config: configUpdates })
-        }, store.webuiPassword);
+        const { response, newPassword } = await window.utils.request(
+            '/api/models/config',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ modelId, config: configUpdates })
+            },
+            store.webuiPassword
+        );
 
         // Update password if server provided a new one
         if (newPassword) {

@@ -1,7 +1,7 @@
 /**
  * Test Schema Sanitizer - Tests for schema transformation for Google API
- * 
- * Verifies that complex nested array schemas are properly converted to 
+ *
+ * Verifies that complex nested array schemas are properly converted to
  * Google's protobuf format (uppercase type names) to fix issue #82:
  * "Proto field is not repeating, cannot start list"
  */
@@ -35,7 +35,9 @@ async function runTests() {
 
     function assertEqual(actual, expected, message = '') {
         if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-            throw new Error(`${message}\nExpected: ${JSON.stringify(expected, null, 2)}\nActual: ${JSON.stringify(actual, null, 2)}`);
+            throw new Error(
+                `${message}\nExpected: ${JSON.stringify(expected, null, 2)}\nActual: ${JSON.stringify(actual, null, 2)}`
+            );
         }
     }
 
@@ -63,8 +65,16 @@ async function runTests() {
         };
         const result = cleanSchema(sanitizeSchema(schema));
         assertEqual(result.type, 'OBJECT', 'Object type should be uppercase');
-        assertEqual(result.properties.name.type, 'STRING', 'Nested string type should be uppercase');
-        assertEqual(result.properties.age.type, 'INTEGER', 'Nested integer type should be uppercase');
+        assertEqual(
+            result.properties.name.type,
+            'STRING',
+            'Nested string type should be uppercase'
+        );
+        assertEqual(
+            result.properties.age.type,
+            'INTEGER',
+            'Nested integer type should be uppercase'
+        );
     });
 
     // Test 3: Array type conversion (the main bug fix)
@@ -103,8 +113,16 @@ async function runTests() {
         assertEqual(result.type, 'OBJECT', 'Root type should be OBJECT');
         assertEqual(result.properties.todos.type, 'ARRAY', 'Todos type should be ARRAY');
         assertEqual(result.properties.todos.items.type, 'OBJECT', 'Items type should be OBJECT');
-        assertEqual(result.properties.todos.items.properties.id.type, 'INTEGER', 'id type should be INTEGER');
-        assertEqual(result.properties.todos.items.properties.title.type, 'STRING', 'title type should be STRING');
+        assertEqual(
+            result.properties.todos.items.properties.id.type,
+            'INTEGER',
+            'id type should be INTEGER'
+        );
+        assertEqual(
+            result.properties.todos.items.properties.title.type,
+            'STRING',
+            'title type should be STRING'
+        );
     });
 
     // Test 5: Complex nested structure (simulating Claude Code tools)
@@ -141,7 +159,10 @@ async function runTests() {
         assertEqual(result.properties.tasks.items.type, 'OBJECT');
         assertEqual(result.properties.tasks.items.properties.subtasks.type, 'ARRAY');
         assertEqual(result.properties.tasks.items.properties.subtasks.items.type, 'OBJECT');
-        assertEqual(result.properties.tasks.items.properties.subtasks.items.properties.completed.type, 'BOOLEAN');
+        assertEqual(
+            result.properties.tasks.items.properties.subtasks.items.properties.completed.type,
+            'BOOLEAN'
+        );
         assertEqual(result.properties.count.type, 'NUMBER');
     });
 
@@ -263,7 +284,7 @@ async function runTests() {
     }
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
     console.error('Test suite failed:', err);
     process.exit(1);
 });

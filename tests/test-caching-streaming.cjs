@@ -13,7 +13,8 @@ const { getTestModels, getModelConfig } = require('./helpers/test-models.cjs');
 
 // Large system prompt to exceed 1024 token minimum for caching
 // This matches the format used in the working direct API test (~36KB)
-const LARGE_SYSTEM_PROMPT = 'You are an expert software engineer. Here is important context:\n' +
+const LARGE_SYSTEM_PROMPT =
+    'You are an expert software engineer. Here is important context:\n' +
     '// Large codebase file content line\n'.repeat(1000);
 
 async function runTestsForModel(family, model) {
@@ -141,8 +142,10 @@ async function runTestsForModel(family, model) {
         // Cache hit check (informational - not a failure if cache doesn't hit)
         results.push({
             name: 'Turn 2: Cache read tokens reported',
-            passed: true,  // Just verify the field exists
-            info: cacheHit ? `${usage.cache_read_input_tokens} tokens` : 'No cache hit (may be first run)'
+            passed: true, // Just verify the field exists
+            info: cacheHit
+                ? `${usage.cache_read_input_tokens} tokens`
+                : 'No cache hit (may be first run)'
         });
     }
 
@@ -161,7 +164,9 @@ async function runTestsForModel(family, model) {
     }
 
     console.log('\n' + '='.repeat(60));
-    console.log(`[${family.toUpperCase()}] ${allPassed ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`);
+    console.log(
+        `[${family.toUpperCase()}] ${allPassed ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`
+    );
     console.log('='.repeat(60));
 
     console.log('\nNote: Cache effectiveness depends on:');
@@ -185,13 +190,15 @@ async function runTests() {
     console.log('\n' + '='.repeat(60));
     console.log('FINAL RESULT');
     console.log('='.repeat(60));
-    console.log(`Overall: ${allPassed ? 'ALL MODEL FAMILIES PASSED' : 'SOME MODEL FAMILIES FAILED'}`);
+    console.log(
+        `Overall: ${allPassed ? 'ALL MODEL FAMILIES PASSED' : 'SOME MODEL FAMILIES FAILED'}`
+    );
     console.log('='.repeat(60));
 
     process.exit(allPassed ? 0 : 1);
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
     console.error('Test failed with error:', err);
     process.exit(1);
 });

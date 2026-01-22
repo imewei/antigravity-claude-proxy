@@ -55,7 +55,9 @@ export class RoundRobinStrategy extends BaseStrategy {
 
                 const position = idx + 1;
                 const total = accounts.length;
-                logger.info(`[RoundRobinStrategy] Using account: ${account.email} (${position}/${total})`);
+                logger.info(
+                    `[RoundRobinStrategy] Using account: ${account.email} (${position}/${total})`
+                );
 
                 return { account, index: idx, waitMs: 0 };
             }

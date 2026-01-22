@@ -21,10 +21,12 @@ window.Components.accountManager = () => ({
         }
 
         const query = this.searchQuery.toLowerCase().trim();
-        return accounts.filter(acc => {
-            return acc.email.toLowerCase().includes(query) ||
-                   (acc.projectId && acc.projectId.toLowerCase().includes(query)) ||
-                   (acc.source && acc.source.toLowerCase().includes(query));
+        return accounts.filter((acc) => {
+            return (
+                acc.email.toLowerCase().includes(query) ||
+                (acc.projectId && acc.projectId.toLowerCase().includes(query)) ||
+                (acc.source && acc.source.toLowerCase().includes(query))
+            );
         });
     },
 
@@ -42,25 +44,30 @@ window.Components.accountManager = () => ({
     },
 
     async refreshAccount(email) {
-        return await window.ErrorHandler.withLoading(async () => {
-            const store = Alpine.store('global');
-            store.showToast(store.t('refreshingAccount', { email }), 'info');
+        return await window.ErrorHandler.withLoading(
+            async () => {
+                const store = Alpine.store('global');
+                store.showToast(store.t('refreshingAccount', { email }), 'info');
 
-            const { response, newPassword } = await window.utils.request(
-                `/api/accounts/${encodeURIComponent(email)}/refresh`,
-                { method: 'POST' },
-                store.webuiPassword
-            );
-            if (newPassword) store.webuiPassword = newPassword;
+                const { response, newPassword } = await window.utils.request(
+                    `/api/accounts/${encodeURIComponent(email)}/refresh`,
+                    { method: 'POST' },
+                    store.webuiPassword
+                );
+                if (newPassword) store.webuiPassword = newPassword;
 
-            const data = await response.json();
-            if (data.status === 'ok') {
-                store.showToast(store.t('refreshedAccount', { email }), 'success');
-                Alpine.store('data').fetchData();
-            } else {
-                throw new Error(data.error || store.t('refreshFailed'));
-            }
-        }, this, 'refreshing', { errorMessage: 'Failed to refresh account' });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    store.showToast(store.t('refreshedAccount', { email }), 'success');
+                    Alpine.store('data').fetchData();
+                } else {
+                    throw new Error(data.error || store.t('refreshFailed'));
+                }
+            },
+            this,
+            'refreshing',
+            { errorMessage: 'Failed to refresh account' }
+        );
     },
 
     async toggleAccount(email, enabled) {
@@ -69,17 +76,21 @@ window.Components.accountManager = () => ({
 
         // Optimistic update: immediately update UI
         const dataStore = Alpine.store('data');
-        const account = dataStore.accounts.find(a => a.email === email);
+        const account = dataStore.accounts.find((a) => a.email === email);
         if (account) {
             account.enabled = enabled;
         }
 
         try {
-            const { response, newPassword } = await window.utils.request(`/api/accounts/${encodeURIComponent(email)}/toggle`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ enabled })
-            }, password);
+            const { response, newPassword } = await window.utils.request(
+                `/api/accounts/${encodeURIComponent(email)}/toggle`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled })
+                },
+                password
+            );
             if (newPassword) store.webuiPassword = newPassword;
 
             const data = await response.json();
@@ -133,47 +144,57 @@ window.Components.accountManager = () => ({
 
     async executeDelete() {
         const email = this.deleteTarget;
-        return await window.ErrorHandler.withLoading(async () => {
-            const store = Alpine.store('global');
+        return await window.ErrorHandler.withLoading(
+            async () => {
+                const store = Alpine.store('global');
 
-            const { response, newPassword } = await window.utils.request(
-                `/api/accounts/${encodeURIComponent(email)}`,
-                { method: 'DELETE' },
-                store.webuiPassword
-            );
-            if (newPassword) store.webuiPassword = newPassword;
+                const { response, newPassword } = await window.utils.request(
+                    `/api/accounts/${encodeURIComponent(email)}`,
+                    { method: 'DELETE' },
+                    store.webuiPassword
+                );
+                if (newPassword) store.webuiPassword = newPassword;
 
-            const data = await response.json();
-            if (data.status === 'ok') {
-                store.showToast(store.t('deletedAccount', { email }), 'success');
-                Alpine.store('data').fetchData();
-                document.getElementById('delete_account_modal').close();
-                this.deleteTarget = '';
-            } else {
-                throw new Error(data.error || store.t('deleteFailed'));
-            }
-        }, this, 'deleting', { errorMessage: 'Failed to delete account' });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    store.showToast(store.t('deletedAccount', { email }), 'success');
+                    Alpine.store('data').fetchData();
+                    document.getElementById('delete_account_modal').close();
+                    this.deleteTarget = '';
+                } else {
+                    throw new Error(data.error || store.t('deleteFailed'));
+                }
+            },
+            this,
+            'deleting',
+            { errorMessage: 'Failed to delete account' }
+        );
     },
 
     async reloadAccounts() {
-        return await window.ErrorHandler.withLoading(async () => {
-            const store = Alpine.store('global');
+        return await window.ErrorHandler.withLoading(
+            async () => {
+                const store = Alpine.store('global');
 
-            const { response, newPassword } = await window.utils.request(
-                '/api/accounts/reload',
-                { method: 'POST' },
-                store.webuiPassword
-            );
-            if (newPassword) store.webuiPassword = newPassword;
+                const { response, newPassword } = await window.utils.request(
+                    '/api/accounts/reload',
+                    { method: 'POST' },
+                    store.webuiPassword
+                );
+                if (newPassword) store.webuiPassword = newPassword;
 
-            const data = await response.json();
-            if (data.status === 'ok') {
-                store.showToast(store.t('accountsReloaded'), 'success');
-                Alpine.store('data').fetchData();
-            } else {
-                throw new Error(data.error || store.t('reloadFailed'));
-            }
-        }, this, 'reloading', { errorMessage: 'Failed to reload accounts' });
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    store.showToast(store.t('accountsReloaded'), 'success');
+                    Alpine.store('data').fetchData();
+                } else {
+                    throw new Error(data.error || store.t('reloadFailed'));
+                }
+            },
+            this,
+            'reloading',
+            { errorMessage: 'Failed to reload accounts' }
+        );
     },
 
     openQuotaModal(account) {
@@ -190,26 +211,31 @@ window.Components.accountManager = () => ({
      */
     getMainModelQuota(account) {
         const limits = account.limits || {};
-        
+
         const getQuotaVal = (id) => {
-             const l = limits[id];
-             if (!l) return -1;
-             if (l.remainingFraction !== null) return l.remainingFraction;
-             if (l.resetTime) return 0; // Rate limited
-             return -1; // Unknown
+            const l = limits[id];
+            if (!l) return -1;
+            if (l.remainingFraction !== null) return l.remainingFraction;
+            if (l.resetTime) return 0; // Rate limited
+            return -1; // Unknown
         };
 
-        const validIds = Object.keys(limits).filter(id => getQuotaVal(id) >= 0);
-        
+        const validIds = Object.keys(limits).filter((id) => getQuotaVal(id) >= 0);
+
         if (validIds.length === 0) return { percent: null, model: '-' };
 
         const DEAD_THRESHOLD = 0.01;
-        
+
         const MODEL_TIERS = [
             { pattern: /\bopus\b/, aliveScore: 100, deadScore: 60 },
             { pattern: /\bsonnet\b/, aliveScore: 90, deadScore: 55 },
             // Gemini 3 Pro / Ultra
-            { pattern: /\bgemini-3\b/, extraCheck: (l) => /\bpro\b/.test(l) || /\bultra\b/.test(l), aliveScore: 80, deadScore: 50 },
+            {
+                pattern: /\bgemini-3\b/,
+                extraCheck: (l) => /\bpro\b/.test(l) || /\bultra\b/.test(l),
+                aliveScore: 80,
+                deadScore: 50
+            },
             { pattern: /\bpro\b/, aliveScore: 75, deadScore: 45 },
             // Mid/Low Tier
             { pattern: /\bhaiku\b/, aliveScore: 30, deadScore: 15 },
@@ -220,14 +246,14 @@ window.Components.accountManager = () => ({
             const lower = id.toLowerCase();
             const val = getQuotaVal(id);
             const isAlive = val > DEAD_THRESHOLD;
-            
+
             for (const tier of MODEL_TIERS) {
                 if (tier.pattern.test(lower)) {
                     if (tier.extraCheck && !tier.extraCheck(lower)) continue;
                     return isAlive ? tier.aliveScore : tier.deadScore;
                 }
             }
-            
+
             return isAlive ? 5 : 0;
         };
 
@@ -236,7 +262,7 @@ window.Components.accountManager = () => ({
 
         const bestModel = validIds[0];
         const val = getQuotaVal(bestModel);
-        
+
         return {
             percent: Math.round(val * 100),
             model: bestModel

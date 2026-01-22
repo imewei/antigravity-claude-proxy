@@ -42,12 +42,18 @@ async function fetchAndSaveSubscription(token, account, onSave) {
         if (subscription && subscription.tier !== 'unknown') {
             account.subscription = subscription;
             if (onSave) {
-                Promise.resolve(onSave()).catch(e => logger.error(`[Credentials] onSave callback failed: ${e.message}`));
+                Promise.resolve(onSave()).catch((e) =>
+                    logger.error(`[Credentials] onSave callback failed: ${e.message}`)
+                );
             }
-            logger.info(`[AccountManager] Updated subscription tier for ${account.email}: ${subscription.tier}`);
+            logger.info(
+                `[AccountManager] Updated subscription tier for ${account.email}: ${subscription.tier}`
+            );
         }
     } catch (e) {
-        logger.debug(`[AccountManager] Subscription fetch failed for ${account.email}: ${e.message}`);
+        logger.debug(
+            `[AccountManager] Subscription fetch failed for ${account.email}: ${e.message}`
+        );
     } finally {
         subscriptionFetchInProgress.delete(account.email);
     }
@@ -66,7 +72,7 @@ async function fetchAndSaveSubscription(token, account, onSave) {
 export async function getTokenForAccount(account, tokenCache, onInvalid, onSave) {
     // Check cache first
     const cached = tokenCache.get(account.email);
-    if (cached && (Date.now() - cached.extractedAt) < TOKEN_REFRESH_INTERVAL_MS) {
+    if (cached && Date.now() - cached.extractedAt < TOKEN_REFRESH_INTERVAL_MS) {
         return cached.token;
     }
 
@@ -83,18 +89,26 @@ export async function getTokenForAccount(account, tokenCache, onInvalid, onSave)
                 account.isInvalid = false;
                 account.invalidReason = null;
                 account.invalidReason = null;
-                if (onSave) Promise.resolve(onSave()).catch(e => logger.error(`[Credentials] onSave callback failed (refresh): ${e.message}`));
+                if (onSave)
+                    Promise.resolve(onSave()).catch((e) =>
+                        logger.error(`[Credentials] onSave callback failed (refresh): ${e.message}`)
+                    );
             }
             logger.success(`[AccountManager] Refreshed OAuth token for: ${account.email}`);
         } catch (error) {
             // Check if it's a transient network error
             if (isNetworkError(error)) {
-                logger.warn(`[AccountManager] Failed to refresh token for ${account.email} due to network error: ${error.message}`);
+                logger.warn(
+                    `[AccountManager] Failed to refresh token for ${account.email} due to network error: ${error.message}`
+                );
                 // Do NOT mark as invalid, just throw so caller knows it failed
                 throw new Error(`AUTH_NETWORK_ERROR: ${error.message}`);
             }
 
-            logger.error(`[AccountManager] Failed to refresh token for ${account.email}:`, error.message);
+            logger.error(
+                `[AccountManager] Failed to refresh token for ${account.email}:`,
+                error.message
+            );
             // Mark account as invalid (credentials need re-auth)
             if (onInvalid) onInvalid(account.email, error.message);
             throw new Error(`AUTH_INVALID: ${account.email}: ${error.message}`);
@@ -135,7 +149,9 @@ export async function getProjectForAccount(account, token, projectCache, onSave 
     }
 
     // Parse refresh token to get stored project IDs (aligned with opencode-antigravity-auth)
-    const parts = account.refreshToken ? parseRefreshParts(account.refreshToken) : { refreshToken: null, projectId: undefined, managedProjectId: undefined };
+    const parts = account.refreshToken
+        ? parseRefreshParts(account.refreshToken)
+        : { refreshToken: null, projectId: undefined, managedProjectId: undefined };
 
     // If we have a managedProjectId in the refresh token, use it
     if (parts.managedProjectId) {
@@ -170,7 +186,7 @@ export async function getProjectForAccount(account, token, projectCache, onSave 
             account.refreshToken = formatRefreshParts({
                 refreshToken: parts.refreshToken,
                 projectId: parts.projectId,
-                managedProjectId: project,
+                managedProjectId: project
             });
             needsSave = true;
         } else if (account.source === 'database' || account.source === 'manual') {
@@ -235,7 +251,7 @@ export async function discoverProject(token, projectId = undefined) {
             const response = await fetch(`${endpoint}/v1internal:loadCodeAssist`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`,
                     'Content-Type': 'application/json',
                     ...LOAD_CODE_ASSIST_HEADERS
                 },
@@ -253,23 +269,34 @@ export async function discoverProject(token, projectId = undefined) {
             gotSuccessfulResponse = true;
             loadCodeAssistData = data;
 
-            logger.debug(`[AccountManager] loadCodeAssist response from ${endpoint}:`, JSON.stringify(data));
+            logger.debug(
+                `[AccountManager] loadCodeAssist response from ${endpoint}:`,
+                JSON.stringify(data)
+            );
 
             // Extract subscription tier from response
             const subscription = extractSubscriptionFromResponse(data);
 
             if (typeof data.cloudaicompanionProject === 'string') {
-                logger.success(`[AccountManager] Discovered project: ${data.cloudaicompanionProject}`);
+                logger.success(
+                    `[AccountManager] Discovered project: ${data.cloudaicompanionProject}`
+                );
                 return { project: data.cloudaicompanionProject, subscription };
             }
             if (data.cloudaicompanionProject?.id) {
-                logger.success(`[AccountManager] Discovered project: ${data.cloudaicompanionProject.id}`);
+                logger.success(
+                    `[AccountManager] Discovered project: ${data.cloudaicompanionProject.id}`
+                );
                 return { project: data.cloudaicompanionProject.id, subscription };
             }
 
             // No project found - log tier data and try to onboard the user
-            logger.info(`[AccountManager] No project in loadCodeAssist response, attempting onboardUser...`);
-            logger.debug(`[AccountManager] Tier data for onboarding: paidTier=${JSON.stringify(data.paidTier)}, currentTier=${JSON.stringify(data.currentTier)}, allowedTiers=${JSON.stringify(data.allowedTiers?.map(t => ({ id: t?.id, isDefault: t?.isDefault })))}`);
+            logger.info(
+                `[AccountManager] No project in loadCodeAssist response, attempting onboardUser...`
+            );
+            logger.debug(
+                `[AccountManager] Tier data for onboarding: paidTier=${JSON.stringify(data.paidTier)}, currentTier=${JSON.stringify(data.currentTier)}, allowedTiers=${JSON.stringify(data.allowedTiers?.map((t) => ({ id: t?.id, isDefault: t?.isDefault })))}`
+            );
             break;
         } catch (error) {
             lastError = error.message;
@@ -290,7 +317,7 @@ export async function discoverProject(token, projectId = undefined) {
         const onboardedProject = await onboardUser(
             token,
             tierId,
-            projectId  // Original projectId without fallback
+            projectId // Original projectId without fallback
         );
         if (onboardedProject) {
             logger.success(`[AccountManager] Successfully onboarded, project: ${onboardedProject}`);

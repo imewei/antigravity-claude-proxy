@@ -12,19 +12,23 @@ const BASE_URL = process.env.TEST_BASE_URL || `http://localhost:${process.env.PO
 function request(path, options = {}) {
     return new Promise((resolve, reject) => {
         const url = new URL(path, BASE_URL);
-        const req = http.request(url, {
-            method: options.method || 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
+        const req = http.request(
+            url,
+            {
+                method: options.method || 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
+            },
+            (res) => {
+                let data = '';
+                res.on('data', (chunk) => (data += chunk));
+                res.on('end', () => {
+                    resolve({ status: res.statusCode, data, headers: res.headers });
+                });
             }
-        }, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                resolve({ status: res.statusCode, data, headers: res.headers });
-            });
-        });
+        );
         req.on('error', reject);
         if (options.body) req.write(JSON.stringify(options.body));
         req.end();
@@ -68,7 +72,7 @@ const tests = [
             const res = await request('/views/accounts.html');
             const columns = ['enabled', 'identity', 'projectId', 'health', 'operations'];
 
-            const missing = columns.filter(col => !res.data.includes(col));
+            const missing = columns.filter((col) => !res.data.includes(col));
             if (missing.length > 0) {
                 throw new Error(`Missing columns: ${missing.join(', ')}`);
             }
@@ -211,7 +215,7 @@ async function runTests() {
     process.exit(failed > 0 ? 1 : 0);
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
     console.error('Test runner failed:', err);
     process.exit(1);
 });

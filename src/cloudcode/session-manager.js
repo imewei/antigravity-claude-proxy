@@ -29,8 +29,8 @@ export function deriveSessionId(anthropicRequest) {
             } else if (Array.isArray(msg.content)) {
                 // Extract text from content blocks
                 content = msg.content
-                    .filter(block => block.type === 'text' && block.text)
-                    .map(block => block.text)
+                    .filter((block) => block.type === 'text' && block.text)
+                    .map((block) => block.text)
                     .join('\n');
             }
 

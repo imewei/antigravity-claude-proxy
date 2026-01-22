@@ -123,7 +123,10 @@ export class ProxyServer {
                 const status = res.statusCode;
                 const logMsg = `[${req.method}] ${req.path} ${status} (${duration}ms)`;
 
-                if (req.path === '/api/event_logging/batch' || req.path === '/v1/messages/count_tokens') {
+                if (
+                    req.path === '/api/event_logging/batch' ||
+                    req.path === '/v1/messages/count_tokens'
+                ) {
                     if (logger.isDebugEnabled) logger.debug(logMsg);
                 } else {
                     if (status >= 500) logger.error(logMsg);

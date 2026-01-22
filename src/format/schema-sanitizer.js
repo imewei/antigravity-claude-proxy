@@ -22,9 +22,7 @@
 function appendDescriptionHint(schema, hint) {
     if (!schema || typeof schema !== 'object') return schema;
     const result = { ...schema };
-    result.description = result.description
-        ? `${result.description} (${hint})`
-        : hint;
+    result.description = result.description ? `${result.description} (${hint})` : hint;
     return result;
 }
 
@@ -72,9 +70,7 @@ function convertRefsToHints(schema) {
         const hint = `See: ${defName}`;
 
         // Merge with existing description if present
-        const description = result.description
-            ? `${result.description} (${hint})`
-            : hint;
+        const description = result.description ? `${result.description} (${hint})` : hint;
 
         // Replace with object type and hint
         return { type: 'object', description };
@@ -254,7 +250,12 @@ function flattenAnyOfOneOf(schema) {
                                 ? `${parentDescription} (${value})`
                                 : value;
                         }
-                    } else if (!(key in result) || key === 'type' || key === 'properties' || key === 'items') {
+                    } else if (
+                        !(key in result) ||
+                        key === 'type' ||
+                        key === 'properties' ||
+                        key === 'items'
+                    ) {
                         result[key] = value;
                     }
                 }
@@ -309,7 +310,7 @@ function addEnumHints(schema) {
 
     // Add enum hint if present and reasonable size
     if (Array.isArray(result.enum) && result.enum.length > 1 && result.enum.length <= 10) {
-        const vals = result.enum.map(v => String(v)).join(', ');
+        const vals = result.enum.map((v) => String(v)).join(', ');
         result = appendDescriptionHint(result, `Allowed: ${vals}`);
     }
 
@@ -380,8 +381,16 @@ function moveConstraintsToDescription(schema) {
     if (!schema || typeof schema !== 'object') return schema;
     if (Array.isArray(schema)) return schema.map(moveConstraintsToDescription);
 
-    const CONSTRAINTS = ['minLength', 'maxLength', 'pattern', 'minimum', 'maximum',
-                         'minItems', 'maxItems', 'format'];
+    const CONSTRAINTS = [
+        'minLength',
+        'maxLength',
+        'pattern',
+        'minimum',
+        'maximum',
+        'minItems',
+        'maxItems',
+        'format'
+    ];
 
     let result = { ...schema };
 
@@ -421,7 +430,7 @@ function moveConstraintsToDescription(schema) {
  */
 function flattenTypeArrays(schema, nullableProps = null, currentPropName = null) {
     if (!schema || typeof schema !== 'object') return schema;
-    if (Array.isArray(schema)) return schema.map(s => flattenTypeArrays(s, nullableProps));
+    if (Array.isArray(schema)) return schema.map((s) => flattenTypeArrays(s, nullableProps));
 
     let result = { ...schema };
 
@@ -429,7 +438,7 @@ function flattenTypeArrays(schema, nullableProps = null, currentPropName = null)
     if (Array.isArray(result.type)) {
         const types = result.type;
         const hasNull = types.includes('null');
-        const nonNullTypes = types.filter(t => t !== 'null' && t);
+        const nonNullTypes = types.filter((t) => t !== 'null' && t);
 
         // Select first non-null type, or 'string' as fallback
         const firstType = nonNullTypes.length > 0 ? nonNullTypes[0] : 'string';
@@ -462,7 +471,7 @@ function flattenTypeArrays(schema, nullableProps = null, currentPropName = null)
 
         // Remove nullable properties from required array
         if (Array.isArray(result.required) && childNullableProps.size > 0) {
-            result.required = result.required.filter(prop => !childNullableProps.has(prop));
+            result.required = result.required.filter((prop) => !childNullableProps.has(prop));
             if (result.required.length === 0) {
                 delete result.required;
             }
@@ -472,7 +481,7 @@ function flattenTypeArrays(schema, nullableProps = null, currentPropName = null)
     // Recursively process items
     if (result.items) {
         if (Array.isArray(result.items)) {
-            result.items = result.items.map(item => flattenTypeArrays(item, nullableProps));
+            result.items = result.items.map((item) => flattenTypeArrays(item, nullableProps));
         } else if (typeof result.items === 'object') {
             result.items = flattenTypeArrays(result.items, nullableProps);
         }
@@ -534,7 +543,7 @@ export function sanitizeSchema(schema) {
             }
         } else if (key === 'items' && value && typeof value === 'object') {
             if (Array.isArray(value)) {
-                sanitized.items = value.map(item => sanitizeSchema(item));
+                sanitized.items = value.map((item) => sanitizeSchema(item));
             } else {
                 sanitized.items = sanitizeSchema(value);
             }
@@ -551,7 +560,10 @@ export function sanitizeSchema(schema) {
     }
 
     // If object type with no properties, add placeholder
-    if (sanitized.type === 'object' && (!sanitized.properties || Object.keys(sanitized.properties).length === 0)) {
+    if (
+        sanitized.type === 'object' &&
+        (!sanitized.properties || Object.keys(sanitized.properties).length === 0)
+    ) {
         sanitized.properties = {
             reason: {
                 type: 'string',
@@ -574,13 +586,13 @@ export function sanitizeSchema(schema) {
 function toGoogleType(type) {
     if (!type || typeof type !== 'string') return type;
     const typeMap = {
-        'string': 'STRING',
-        'number': 'NUMBER',
-        'integer': 'INTEGER',
-        'boolean': 'BOOLEAN',
-        'array': 'ARRAY',
-        'object': 'OBJECT',
-        'null': 'STRING'  // Fallback for null type
+        string: 'STRING',
+        number: 'NUMBER',
+        integer: 'INTEGER',
+        boolean: 'BOOLEAN',
+        array: 'ARRAY',
+        object: 'OBJECT',
+        null: 'STRING' // Fallback for null type
     };
     return typeMap[type.toLowerCase()] || type.toUpperCase();
 }
@@ -619,10 +631,25 @@ export function cleanSchema(schema) {
 
     // Phase 3: Remove unsupported keywords
     const unsupported = [
-        'additionalProperties', 'default', '$schema', '$defs',
-        'definitions', '$ref', '$id', '$comment', 'title',
-        'minLength', 'maxLength', 'pattern', 'format',
-        'minItems', 'maxItems', 'examples', 'allOf', 'anyOf', 'oneOf'
+        'additionalProperties',
+        'default',
+        '$schema',
+        '$defs',
+        'definitions',
+        '$ref',
+        '$id',
+        '$comment',
+        'title',
+        'minLength',
+        'maxLength',
+        'pattern',
+        'format',
+        'minItems',
+        'maxItems',
+        'examples',
+        'allOf',
+        'anyOf',
+        'oneOf'
     ];
 
     for (const key of unsupported) {
@@ -657,7 +684,7 @@ export function cleanSchema(schema) {
     // Validate that required array only contains properties that exist
     if (result.required && Array.isArray(result.required) && result.properties) {
         const definedProps = new Set(Object.keys(result.properties));
-        result.required = result.required.filter(prop => definedProps.has(prop));
+        result.required = result.required.filter((prop) => definedProps.has(prop));
         if (result.required.length === 0) {
             delete result.required;
         }

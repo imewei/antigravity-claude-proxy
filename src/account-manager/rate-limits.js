@@ -20,7 +20,7 @@ export function isAllRateLimited(accounts, modelId) {
     if (accounts.length === 0) return true;
     if (!modelId) return false; // No model specified = not rate limited
 
-    return accounts.every(acc => {
+    return accounts.every((acc) => {
         if (acc.isInvalid) return true; // Invalid accounts count as unavailable
         if (acc.enabled === false) return true; // Disabled accounts count as unavailable
         const modelLimits = acc.modelRateLimits || {};
@@ -37,7 +37,7 @@ export function isAllRateLimited(accounts, modelId) {
  * @returns {Array} Array of available account objects
  */
 export function getAvailableAccounts(accounts, modelId = null) {
-    return accounts.filter(acc => {
+    return accounts.filter((acc) => {
         if (acc.isInvalid) return false;
 
         // WebUI: Skip disabled accounts
@@ -61,7 +61,7 @@ export function getAvailableAccounts(accounts, modelId = null) {
  * @returns {Array} Array of invalid account objects
  */
 export function getInvalidAccounts(accounts) {
-    return accounts.filter(acc => acc.isInvalid);
+    return accounts.filter((acc) => acc.isInvalid);
 }
 
 /**
@@ -81,7 +81,9 @@ export function clearExpiredLimits(accounts) {
                     limit.isRateLimited = false;
                     limit.resetTime = null;
                     cleared++;
-                    logger.success(`[AccountManager] Rate limit expired for: ${account.email} (model: ${modelId})`);
+                    logger.success(
+                        `[AccountManager] Rate limit expired for: ${account.email} (model: ${modelId})`
+                    );
                 }
             }
         }
@@ -116,12 +118,12 @@ export function resetAllRateLimits(accounts) {
  * @returns {boolean} True if account was found and marked
  */
 export function markRateLimited(accounts, email, resetMs = null, modelId) {
-    const account = accounts.find(a => a.email === email);
+    const account = accounts.find((a) => a.email === email);
     if (!account) return false;
 
     // Store the ACTUAL reset time from the API
     // This is used to decide whether to wait (short) or switch accounts (long)
-    const actualResetMs = (resetMs && resetMs > 0) ? resetMs : DEFAULT_COOLDOWN_MS;
+    const actualResetMs = resetMs && resetMs > 0 ? resetMs : DEFAULT_COOLDOWN_MS;
 
     if (!account.modelRateLimits) {
         account.modelRateLimits = {};
@@ -129,8 +131,8 @@ export function markRateLimited(accounts, email, resetMs = null, modelId) {
 
     account.modelRateLimits[modelId] = {
         isRateLimited: true,
-        resetTime: Date.now() + actualResetMs,  // Actual reset time for decisions
-        actualResetMs: actualResetMs             // Original duration from API
+        resetTime: Date.now() + actualResetMs, // Actual reset time for decisions
+        actualResetMs: actualResetMs // Original duration from API
     };
 
     // Log appropriately based on duration
@@ -156,22 +158,16 @@ export function markRateLimited(accounts, email, resetMs = null, modelId) {
  * @returns {boolean} True if account was found and marked
  */
 export function markInvalid(accounts, email, reason = 'Unknown error') {
-    const account = accounts.find(a => a.email === email);
+    const account = accounts.find((a) => a.email === email);
     if (!account) return false;
 
     account.isInvalid = true;
     account.invalidReason = reason;
     account.invalidAt = Date.now();
 
-    logger.error(
-        `[AccountManager] ⚠ Account INVALID: ${email}`
-    );
-    logger.error(
-        `[AccountManager]   Reason: ${reason}`
-    );
-    logger.error(
-        `[AccountManager]   Run 'npm run accounts' to re-authenticate this account`
-    );
+    logger.error(`[AccountManager] ⚠ Account INVALID: ${email}`);
+    logger.error(`[AccountManager]   Reason: ${reason}`);
+    logger.error(`[AccountManager]   Run 'npm run accounts' to re-authenticate this account`);
 
     return true;
 }
@@ -204,7 +200,9 @@ export function getMinWaitTimeMs(accounts, modelId) {
     }
 
     if (soonestAccount) {
-        logger.info(`[AccountManager] Shortest wait: ${formatDuration(minWait)} (account: ${soonestAccount.email})`);
+        logger.info(
+            `[AccountManager] Shortest wait: ${formatDuration(minWait)} (account: ${soonestAccount.email})`
+        );
     }
 
     return minWait === Infinity ? DEFAULT_COOLDOWN_MS : minWait;
@@ -220,7 +218,7 @@ export function getMinWaitTimeMs(accounts, modelId) {
  * @returns {{isRateLimited: boolean, actualResetMs: number|null, waitMs: number}} Rate limit info
  */
 export function getRateLimitInfo(accounts, email, modelId) {
-    const account = accounts.find(a => a.email === email);
+    const account = accounts.find((a) => a.email === email);
     if (!account || !account.modelRateLimits || !account.modelRateLimits[modelId]) {
         return { isRateLimited: false, actualResetMs: null, waitMs: 0 };
     }

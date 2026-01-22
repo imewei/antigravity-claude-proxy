@@ -67,7 +67,9 @@ export class AccountManager extends EventEmitter {
 
         // If config exists but has no accounts, fall back to Antigravity database
         if (this.#accounts.length === 0) {
-            logger.warn('[AccountManager] No accounts in config. Falling back to Antigravity database');
+            logger.warn(
+                '[AccountManager] No accounts in config. Falling back to Antigravity database'
+            );
             const { accounts: defaultAccounts, tokenCache } = loadDefaultAccount();
             this.#accounts = defaultAccounts;
             this.#tokenCache = tokenCache;
@@ -76,12 +78,15 @@ export class AccountManager extends EventEmitter {
         // Determine strategy: CLI override > env var > config file > default
         const configStrategy = config?.accountSelection?.strategy;
         const envStrategy = process.env.ACCOUNT_STRATEGY;
-        this.#strategyName = strategyOverride || envStrategy || configStrategy || this.#strategyName;
+        this.#strategyName =
+            strategyOverride || envStrategy || configStrategy || this.#strategyName;
 
         // Create the strategy instance
         const strategyConfig = config?.accountSelection || {};
         this.#strategy = createStrategy(this.#strategyName, strategyConfig);
-        logger.info(`[AccountManager] Using ${getStrategyLabel(this.#strategyName)} selection strategy`);
+        logger.info(
+            `[AccountManager] Using ${getStrategyLabel(this.#strategyName)} selection strategy`
+        );
 
         // Clear any expired rate limits
         this.clearExpiredLimits();
@@ -351,7 +356,12 @@ export class AccountManager extends EventEmitter {
                 this.#saveTimeout = null;
 
                 try {
-                    await saveAccounts(this.#configPath, this.#accounts, this.#settings, this.#currentIndex);
+                    await saveAccounts(
+                        this.#configPath,
+                        this.#accounts,
+                        this.#settings,
+                        this.#currentIndex
+                    );
                     this.emit('update', this.getStatus());
 
                     // Resolve all waiting promises
@@ -380,10 +390,10 @@ export class AccountManager extends EventEmitter {
         const invalid = this.getInvalidAccounts();
 
         // Count accounts that have any active model-specific rate limits
-        const rateLimited = this.#accounts.filter(a => {
+        const rateLimited = this.#accounts.filter((a) => {
             if (!a.modelRateLimits) return false;
             return Object.values(a.modelRateLimits).some(
-                limit => limit.isRateLimited && limit.resetTime > Date.now()
+                (limit) => limit.isRateLimited && limit.resetTime > Date.now()
             );
         });
 
@@ -393,10 +403,10 @@ export class AccountManager extends EventEmitter {
             rateLimited: rateLimited.length,
             invalid: invalid.length,
             summary: `${this.#accounts.length} total, ${available.length} available, ${rateLimited.length} rate-limited, ${invalid.length} invalid`,
-            accounts: this.#accounts.map(a => ({
+            accounts: this.#accounts.map((a) => ({
                 email: a.email,
                 source: a.source,
-                enabled: a.enabled !== false,  // Default to true if undefined
+                enabled: a.enabled !== false, // Default to true if undefined
                 projectId: a.projectId || null,
                 modelRateLimits: a.modelRateLimits || {},
                 limits: a.limits || {}, // Include quota info if available in memory

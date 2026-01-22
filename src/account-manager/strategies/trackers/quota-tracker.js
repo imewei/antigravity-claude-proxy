@@ -8,10 +8,10 @@
 
 // Default configuration
 const DEFAULT_CONFIG = {
-    lowThreshold: 0.10,       // 10% - reduce score
-    criticalThreshold: 0.05,  // 5% - exclude from candidates
-    staleMs: 300000,          // 5 min - max age of quota data to trust
-    unknownScore: 50          // Score for accounts with unknown quota
+    lowThreshold: 0.1, // 10% - reduce score
+    criticalThreshold: 0.05, // 5% - exclude from candidates
+    staleMs: 300000, // 5 min - max age of quota data to trust
+    unknownScore: 50 // Score for accounts with unknown quota
 };
 
 export class QuotaTracker {
@@ -44,7 +44,7 @@ export class QuotaTracker {
      */
     isQuotaFresh(account) {
         if (!account?.quota?.lastChecked) return false;
-        return (Date.now() - account.quota.lastChecked) < this.#config.staleMs;
+        return Date.now() - account.quota.lastChecked < this.#config.staleMs;
     }
 
     /**

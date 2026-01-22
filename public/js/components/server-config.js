@@ -27,7 +27,11 @@ window.Components.serverConfig = () => ({
     async fetchServerConfig() {
         const password = Alpine.store('global').webuiPassword;
         try {
-            const { response, newPassword } = await window.utils.request('/api/config', {}, password);
+            const { response, newPassword } = await window.utils.request(
+                '/api/config',
+                {},
+                password
+            );
             if (newPassword) Alpine.store('global').webuiPassword = newPassword;
 
             if (!response.ok) throw new Error('Failed to fetch config');
@@ -37,8 +41,6 @@ window.Components.serverConfig = () => ({
             console.error('Failed to fetch server config:', e);
         }
     },
-
-
 
     // Password management
     passwordDialog: {
@@ -80,11 +82,15 @@ window.Components.serverConfig = () => ({
         }
 
         try {
-            const { response } = await window.utils.request('/api/config/password', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ oldPassword, newPassword })
-            }, store.webuiPassword);
+            const { response } = await window.utils.request(
+                '/api/config/password',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ oldPassword, newPassword })
+                },
+                store.webuiPassword
+            );
 
             if (!response.ok) {
                 const data = await response.json();
@@ -109,11 +115,15 @@ window.Components.serverConfig = () => ({
         this.serverConfig.debug = enabled;
 
         try {
-            const { response, newPassword } = await window.utils.request('/api/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ debug: enabled })
-            }, store.webuiPassword);
+            const { response, newPassword } = await window.utils.request(
+                '/api/config',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ debug: enabled })
+                },
+                store.webuiPassword
+            );
 
             if (newPassword) store.webuiPassword = newPassword;
 
@@ -141,11 +151,15 @@ window.Components.serverConfig = () => ({
         this.serverConfig.persistTokenCache = enabled;
 
         try {
-            const { response, newPassword } = await window.utils.request('/api/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ persistTokenCache: enabled })
-            }, store.webuiPassword);
+            const { response, newPassword } = await window.utils.request(
+                '/api/config',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ persistTokenCache: enabled })
+                },
+                store.webuiPassword
+            );
 
             if (newPassword) store.webuiPassword = newPassword;
 
@@ -196,11 +210,15 @@ window.Components.serverConfig = () => ({
                 const payload = {};
                 payload[fieldName] = value;
 
-                const { response, newPassword } = await window.utils.request('/api/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                }, store.webuiPassword);
+                const { response, newPassword } = await window.utils.request(
+                    '/api/config',
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    },
+                    store.webuiPassword
+                );
 
                 if (newPassword) store.webuiPassword = newPassword;
 
@@ -214,7 +232,10 @@ window.Components.serverConfig = () => ({
             } catch (e) {
                 // Rollback on error
                 this.serverConfig[fieldName] = previousValue;
-                store.showToast(store.t('failedToUpdateField', { displayName }) + ': ' + e.message, 'error');
+                store.showToast(
+                    store.t('failedToUpdateField', { displayName }) + ': ' + e.message,
+                    'error'
+                );
             }
         }, window.AppConstants.INTERVALS.CONFIG_DEBOUNCE);
     },
@@ -222,68 +243,102 @@ window.Components.serverConfig = () => ({
     // Individual toggle methods for each Advanced Tuning field with validation
     toggleMaxRetries(value) {
         const { MAX_RETRIES_MIN, MAX_RETRIES_MAX } = window.AppConstants.VALIDATION;
-        this.saveConfigField('maxRetries', value, 'Max Retries',
-            (v) => window.Validators.validateRange(v, MAX_RETRIES_MIN, MAX_RETRIES_MAX, 'Max Retries'));
+        this.saveConfigField('maxRetries', value, 'Max Retries', (v) =>
+            window.Validators.validateRange(v, MAX_RETRIES_MIN, MAX_RETRIES_MAX, 'Max Retries')
+        );
     },
 
     toggleRetryBaseMs(value) {
         const { RETRY_BASE_MS_MIN, RETRY_BASE_MS_MAX } = window.AppConstants.VALIDATION;
-        this.saveConfigField('retryBaseMs', value, 'Retry Base Delay',
-            (v) => window.Validators.validateRange(v, RETRY_BASE_MS_MIN, RETRY_BASE_MS_MAX, 'Retry Base Delay'));
+        this.saveConfigField('retryBaseMs', value, 'Retry Base Delay', (v) =>
+            window.Validators.validateRange(
+                v,
+                RETRY_BASE_MS_MIN,
+                RETRY_BASE_MS_MAX,
+                'Retry Base Delay'
+            )
+        );
     },
 
     toggleRetryMaxMs(value) {
         const { RETRY_MAX_MS_MIN, RETRY_MAX_MS_MAX } = window.AppConstants.VALIDATION;
-        this.saveConfigField('retryMaxMs', value, 'Retry Max Delay',
-            (v) => window.Validators.validateRange(v, RETRY_MAX_MS_MIN, RETRY_MAX_MS_MAX, 'Retry Max Delay'));
+        this.saveConfigField('retryMaxMs', value, 'Retry Max Delay', (v) =>
+            window.Validators.validateRange(
+                v,
+                RETRY_MAX_MS_MIN,
+                RETRY_MAX_MS_MAX,
+                'Retry Max Delay'
+            )
+        );
     },
 
     toggleDefaultCooldownMs(value) {
         const { DEFAULT_COOLDOWN_MIN, DEFAULT_COOLDOWN_MAX } = window.AppConstants.VALIDATION;
-        this.saveConfigField('defaultCooldownMs', value, 'Default Cooldown',
-            (v) => window.Validators.validateTimeout(v, DEFAULT_COOLDOWN_MIN, DEFAULT_COOLDOWN_MAX));
+        this.saveConfigField('defaultCooldownMs', value, 'Default Cooldown', (v) =>
+            window.Validators.validateTimeout(v, DEFAULT_COOLDOWN_MIN, DEFAULT_COOLDOWN_MAX)
+        );
     },
 
     toggleMaxWaitBeforeErrorMs(value) {
         const { MAX_WAIT_MIN, MAX_WAIT_MAX } = window.AppConstants.VALIDATION;
-        this.saveConfigField('maxWaitBeforeErrorMs', value, 'Max Wait Threshold',
-            (v) => window.Validators.validateTimeout(v, MAX_WAIT_MIN, MAX_WAIT_MAX));
+        this.saveConfigField('maxWaitBeforeErrorMs', value, 'Max Wait Threshold', (v) =>
+            window.Validators.validateTimeout(v, MAX_WAIT_MIN, MAX_WAIT_MAX)
+        );
     },
 
     toggleMaxAccounts(value) {
         const { MAX_ACCOUNTS_MIN, MAX_ACCOUNTS_MAX } = window.AppConstants.VALIDATION;
-        this.saveConfigField('maxAccounts', value, 'Max Accounts',
-            (v) => window.Validators.validateRange(v, MAX_ACCOUNTS_MIN, MAX_ACCOUNTS_MAX, 'Max Accounts'));
+        this.saveConfigField('maxAccounts', value, 'Max Accounts', (v) =>
+            window.Validators.validateRange(v, MAX_ACCOUNTS_MIN, MAX_ACCOUNTS_MAX, 'Max Accounts')
+        );
     },
 
     toggleRateLimitDedupWindowMs(value) {
         const { RATE_LIMIT_DEDUP_MIN, RATE_LIMIT_DEDUP_MAX } = window.AppConstants.VALIDATION;
-        this.saveConfigField('rateLimitDedupWindowMs', value, 'Rate Limit Dedup Window',
-            (v) => window.Validators.validateTimeout(v, RATE_LIMIT_DEDUP_MIN, RATE_LIMIT_DEDUP_MAX));
+        this.saveConfigField('rateLimitDedupWindowMs', value, 'Rate Limit Dedup Window', (v) =>
+            window.Validators.validateTimeout(v, RATE_LIMIT_DEDUP_MIN, RATE_LIMIT_DEDUP_MAX)
+        );
     },
 
     toggleMaxConsecutiveFailures(value) {
-        const { MAX_CONSECUTIVE_FAILURES_MIN, MAX_CONSECUTIVE_FAILURES_MAX } = window.AppConstants.VALIDATION;
-        this.saveConfigField('maxConsecutiveFailures', value, 'Max Consecutive Failures',
-            (v) => window.Validators.validateRange(v, MAX_CONSECUTIVE_FAILURES_MIN, MAX_CONSECUTIVE_FAILURES_MAX, 'Max Consecutive Failures'));
+        const { MAX_CONSECUTIVE_FAILURES_MIN, MAX_CONSECUTIVE_FAILURES_MAX } =
+            window.AppConstants.VALIDATION;
+        this.saveConfigField('maxConsecutiveFailures', value, 'Max Consecutive Failures', (v) =>
+            window.Validators.validateRange(
+                v,
+                MAX_CONSECUTIVE_FAILURES_MIN,
+                MAX_CONSECUTIVE_FAILURES_MAX,
+                'Max Consecutive Failures'
+            )
+        );
     },
 
     toggleExtendedCooldownMs(value) {
         const { EXTENDED_COOLDOWN_MIN, EXTENDED_COOLDOWN_MAX } = window.AppConstants.VALIDATION;
-        this.saveConfigField('extendedCooldownMs', value, 'Extended Cooldown',
-            (v) => window.Validators.validateTimeout(v, EXTENDED_COOLDOWN_MIN, EXTENDED_COOLDOWN_MAX));
+        this.saveConfigField('extendedCooldownMs', value, 'Extended Cooldown', (v) =>
+            window.Validators.validateTimeout(v, EXTENDED_COOLDOWN_MIN, EXTENDED_COOLDOWN_MAX)
+        );
     },
 
     toggleCapacityRetryDelayMs(value) {
-        const { CAPACITY_RETRY_DELAY_MIN, CAPACITY_RETRY_DELAY_MAX } = window.AppConstants.VALIDATION;
-        this.saveConfigField('capacityRetryDelayMs', value, 'Capacity Retry Delay',
-            (v) => window.Validators.validateTimeout(v, CAPACITY_RETRY_DELAY_MIN, CAPACITY_RETRY_DELAY_MAX));
+        const { CAPACITY_RETRY_DELAY_MIN, CAPACITY_RETRY_DELAY_MAX } =
+            window.AppConstants.VALIDATION;
+        this.saveConfigField('capacityRetryDelayMs', value, 'Capacity Retry Delay', (v) =>
+            window.Validators.validateTimeout(v, CAPACITY_RETRY_DELAY_MIN, CAPACITY_RETRY_DELAY_MAX)
+        );
     },
 
     toggleMaxCapacityRetries(value) {
-        const { MAX_CAPACITY_RETRIES_MIN, MAX_CAPACITY_RETRIES_MAX } = window.AppConstants.VALIDATION;
-        this.saveConfigField('maxCapacityRetries', value, 'Max Capacity Retries',
-            (v) => window.Validators.validateRange(v, MAX_CAPACITY_RETRIES_MIN, MAX_CAPACITY_RETRIES_MAX, 'Max Capacity Retries'));
+        const { MAX_CAPACITY_RETRIES_MIN, MAX_CAPACITY_RETRIES_MAX } =
+            window.AppConstants.VALIDATION;
+        this.saveConfigField('maxCapacityRetries', value, 'Max Capacity Retries', (v) =>
+            window.Validators.validateRange(
+                v,
+                MAX_CAPACITY_RETRIES_MIN,
+                MAX_CAPACITY_RETRIES_MAX,
+                'Max Capacity Retries'
+            )
+        );
     },
 
     // Toggle Account Selection Strategy
@@ -304,11 +359,15 @@ window.Components.serverConfig = () => ({
         this.serverConfig.accountSelection.strategy = strategy;
 
         try {
-            const { response, newPassword } = await window.utils.request('/api/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accountSelection: { strategy } })
-            }, store.webuiPassword);
+            const { response, newPassword } = await window.utils.request(
+                '/api/config',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accountSelection: { strategy } })
+                },
+                store.webuiPassword
+            );
 
             if (newPassword) store.webuiPassword = newPassword;
 
@@ -334,9 +393,9 @@ window.Components.serverConfig = () => ({
     getStrategyLabel(strategy) {
         const store = Alpine.store('global');
         const labels = {
-            'sticky': store.t('strategyStickyLabel'),
+            sticky: store.t('strategyStickyLabel'),
             'round-robin': store.t('strategyRoundRobinLabel'),
-            'hybrid': store.t('strategyHybridLabel')
+            hybrid: store.t('strategyHybridLabel')
         };
         return labels[strategy] || strategy;
     },
@@ -346,9 +405,9 @@ window.Components.serverConfig = () => ({
         const store = Alpine.store('global');
         const strategy = this.serverConfig.accountSelection?.strategy || 'hybrid';
         const descriptions = {
-            'sticky': store.t('strategyStickyDesc'),
+            sticky: store.t('strategyStickyDesc'),
             'round-robin': store.t('strategyRoundRobinDesc'),
-            'hybrid': store.t('strategyHybridDesc')
+            hybrid: store.t('strategyHybridDesc')
         };
         return descriptions[strategy] || '';
     }

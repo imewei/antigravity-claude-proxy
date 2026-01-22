@@ -12,16 +12,20 @@ const BASE_URL = process.env.TEST_BASE_URL || `http://localhost:${process.env.PO
 function request(path, options = {}) {
     return new Promise((resolve, reject) => {
         const url = new URL(path, BASE_URL);
-        const req = http.request(url, {
-            method: options.method || 'GET',
-            headers: options.headers || {}
-        }, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                resolve({ status: res.statusCode, data, headers: res.headers });
-            });
-        });
+        const req = http.request(
+            url,
+            {
+                method: options.method || 'GET',
+                headers: options.headers || {}
+            },
+            (res) => {
+                let data = '';
+                res.on('data', (chunk) => (data += chunk));
+                res.on('end', () => {
+                    resolve({ status: res.statusCode, data, headers: res.headers });
+                });
+            }
+        );
         req.on('error', reject);
         if (options.body) req.write(JSON.stringify(options.body));
         req.end();
@@ -67,7 +71,11 @@ const tests = [
                         return;
                     }
                     if (res.headers['content-type'] !== 'text/event-stream') {
-                        reject(new Error(`Expected text/event-stream, got ${res.headers['content-type']}`));
+                        reject(
+                            new Error(
+                                `Expected text/event-stream, got ${res.headers['content-type']}`
+                            )
+                        );
                         return;
                     }
                     req.destroy(); // Close connection
@@ -157,7 +165,7 @@ async function runTests() {
     process.exit(failed > 0 ? 1 : 0);
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
     console.error('Test runner failed:', err);
     process.exit(1);
 });

@@ -49,7 +49,10 @@ window.Components.dashboard = () => ({
                 if (this._debouncedUpdateCharts) {
                     this._debouncedUpdateCharts();
                 } else {
-                    this._debouncedUpdateCharts = window.utils.debounce(() => this.updateCharts(), 100);
+                    this._debouncedUpdateCharts = window.utils.debounce(
+                        () => this.updateCharts(),
+                        100
+                    );
                     this._debouncedUpdateCharts();
                 }
             }
@@ -57,9 +60,16 @@ window.Components.dashboard = () => ({
 
         // Watch for history updates from data-store (automatically loaded with account data)
         this.$watch('$store.data.usageHistory', (newHistory) => {
-            if (this.$store.global.activeTab === 'dashboard' && newHistory && Object.keys(newHistory).length > 0) {
+            if (
+                this.$store.global.activeTab === 'dashboard' &&
+                newHistory &&
+                Object.keys(newHistory).length > 0
+            ) {
                 // Optimization: Skip if data hasn't changed (prevents double render on load)
-                if (this.historyData && JSON.stringify(newHistory) === JSON.stringify(this.historyData)) {
+                if (
+                    this.historyData &&
+                    JSON.stringify(newHistory) === JSON.stringify(this.historyData)
+                ) {
                     return;
                 }
 
@@ -81,7 +91,10 @@ window.Components.dashboard = () => ({
                 const history = Alpine.store('data').usageHistory;
                 if (history && Object.keys(history).length > 0) {
                     // Check if we already have this data to avoid redundant chart update
-                    if (!this.historyData || JSON.stringify(history) !== JSON.stringify(this.historyData)) {
+                    if (
+                        !this.historyData ||
+                        JSON.stringify(history) !== JSON.stringify(this.historyData)
+                    ) {
                         this.historyData = history;
                         this.processHistory(history);
                         this.stats.hasTrendData = true;
@@ -94,7 +107,9 @@ window.Components.dashboard = () => ({
     processHistory(history) {
         // Build model tree from hierarchical data
         const tree = {};
-        let total = 0, today = 0, thisHour = 0;
+        let total = 0,
+            today = 0,
+            thisHour = 0;
 
         const now = new Date();
         const todayStart = new Date(now);
@@ -114,7 +129,7 @@ window.Components.dashboard = () => ({
                 if (typeof value === 'object' && value !== null) {
                     if (!tree[key]) tree[key] = new Set();
 
-                    Object.keys(value).forEach(modelName => {
+                    Object.keys(value).forEach((modelName) => {
                         if (modelName !== '_subtotal') {
                             tree[key].add(modelName);
                         }

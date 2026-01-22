@@ -13,7 +13,7 @@ window.ErrorHandler = window.ErrorHandler || {};
  * @param {Function} options.onError - Custom error handler callback
  * @returns {Promise<any>} Result of the function or undefined on error
  */
-window.ErrorHandler.safeAsync = async function(fn, errorMessage = null, options = {}) {
+window.ErrorHandler.safeAsync = async function (fn, errorMessage = null, options = {}) {
     const { rethrow = false, onError = null } = options;
     const store = Alpine.store('global');
     const defaultErrorMessage = errorMessage || store.t('operationFailed');
@@ -51,7 +51,7 @@ window.ErrorHandler.safeAsync = async function(fn, errorMessage = null, options 
  * @param {string} message - Error message
  * @param {Error} error - Optional error object
  */
-window.ErrorHandler.showError = function(message, error = null) {
+window.ErrorHandler.showError = function (message, error = null) {
     const store = Alpine.store('global');
     const fullMessage = error ? `${message}: ${error.message}` : message;
     store.showToast(fullMessage, 'error');
@@ -81,7 +81,12 @@ window.ErrorHandler.showError = function(message, error = null) {
  * //   Refresh
  * // </button>
  */
-window.ErrorHandler.withLoading = async function(asyncFn, context, loadingKey = 'loading', options = {}) {
+window.ErrorHandler.withLoading = async function (
+    asyncFn,
+    context,
+    loadingKey = 'loading',
+    options = {}
+) {
     // Set loading state to true
     context[loadingKey] = true;
 

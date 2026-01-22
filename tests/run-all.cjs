@@ -55,13 +55,15 @@ async function main() {
     let testsToRun = tests;
 
     if (specificTest) {
-        testsToRun = tests.filter(t =>
-            t.file.includes(specificTest) || t.name.toLowerCase().includes(specificTest.toLowerCase())
+        testsToRun = tests.filter(
+            (t) =>
+                t.file.includes(specificTest) ||
+                t.name.toLowerCase().includes(specificTest.toLowerCase())
         );
         if (testsToRun.length === 0) {
             console.log(`No test found matching: ${specificTest}`);
             console.log('\nAvailable tests:');
-            tests.forEach(t => console.log(`  - ${t.name} (${t.file})`));
+            tests.forEach((t) => console.log(`  - ${t.name} (${t.file})`));
             process.exit(1);
         }
     }
@@ -102,7 +104,7 @@ async function main() {
     process.exit(allPassed ? 0 : 1);
 }
 
-main().catch(err => {
+main().catch((err) => {
     console.error('Test runner failed:', err);
     process.exit(1);
 });

@@ -8,13 +8,13 @@
 
 // Default configuration (matches opencode-antigravity-auth)
 const DEFAULT_CONFIG = {
-    initial: 70,           // Starting score for new accounts
-    successReward: 1,      // Points on successful request
+    initial: 70, // Starting score for new accounts
+    successReward: 1, // Points on successful request
     rateLimitPenalty: -10, // Points on rate limit
-    failurePenalty: -20,   // Points on other failures
-    recoveryPerHour: 2,    // Passive recovery rate
-    minUsable: 50,         // Minimum score to be selected
-    maxScore: 100          // Maximum score cap
+    failurePenalty: -20, // Points on other failures
+    recoveryPerHour: 2, // Passive recovery rate
+    minUsable: 50, // Minimum score to be selected
+    maxScore: 100 // Maximum score cap
 };
 
 export class HealthTracker {
@@ -44,10 +44,7 @@ export class HealthTracker {
         const now = Date.now();
         const hoursElapsed = (now - record.lastUpdated) / (1000 * 60 * 60);
         const recovery = hoursElapsed * this.#config.recoveryPerHour;
-        const recoveredScore = Math.min(
-            this.#config.maxScore,
-            record.score + recovery
-        );
+        const recoveredScore = Math.min(this.#config.maxScore, record.score + recovery);
 
         return recoveredScore;
     }
@@ -58,10 +55,7 @@ export class HealthTracker {
      */
     recordSuccess(email) {
         const currentScore = this.getScore(email);
-        const newScore = Math.min(
-            this.#config.maxScore,
-            currentScore + this.#config.successReward
-        );
+        const newScore = Math.min(this.#config.maxScore, currentScore + this.#config.successReward);
         this.#scores.set(email, {
             score: newScore,
             lastUpdated: Date.now(),
@@ -76,10 +70,7 @@ export class HealthTracker {
     recordRateLimit(email) {
         const record = this.#scores.get(email);
         const currentScore = this.getScore(email);
-        const newScore = Math.max(
-            0,
-            currentScore + this.#config.rateLimitPenalty
-        );
+        const newScore = Math.max(0, currentScore + this.#config.rateLimitPenalty);
         this.#scores.set(email, {
             score: newScore,
             lastUpdated: Date.now(),
@@ -94,10 +85,7 @@ export class HealthTracker {
     recordFailure(email) {
         const record = this.#scores.get(email);
         const currentScore = this.getScore(email);
-        const newScore = Math.max(
-            0,
-            currentScore + this.#config.failurePenalty
-        );
+        const newScore = Math.max(0, currentScore + this.#config.failurePenalty);
         this.#scores.set(email, {
             score: newScore,
             lastUpdated: Date.now(),

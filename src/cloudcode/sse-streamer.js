@@ -121,7 +121,6 @@ export async function* streamSSEResponse(response, originalModel) {
                             index: blockIndex,
                             delta: { type: 'thinking_delta', thinking: text }
                         };
-
                     } else if (part.text !== undefined) {
                         // Skip empty text parts (but preserve whitespace-only chunks for proper spacing)
                         if (part.text === '') {
@@ -134,7 +133,10 @@ export async function* streamSSEResponse(response, originalModel) {
                                 yield {
                                     type: 'content_block_delta',
                                     index: blockIndex,
-                                    delta: { type: 'signature_delta', signature: currentThinkingSignature }
+                                    delta: {
+                                        type: 'signature_delta',
+                                        signature: currentThinkingSignature
+                                    }
                                 };
                                 currentThinkingSignature = '';
                             }
@@ -155,7 +157,6 @@ export async function* streamSSEResponse(response, originalModel) {
                             index: blockIndex,
                             delta: { type: 'text_delta', text: part.text }
                         };
-
                     } else if (part.functionCall) {
                         // Handle tool use
                         // For Gemini 3+, capture thoughtSignature from the functionCall part
@@ -166,7 +167,10 @@ export async function* streamSSEResponse(response, originalModel) {
                             yield {
                                 type: 'content_block_delta',
                                 index: blockIndex,
-                                delta: { type: 'signature_delta', signature: currentThinkingSignature }
+                                delta: {
+                                    type: 'signature_delta',
+                                    signature: currentThinkingSignature
+                                }
                             };
                             currentThinkingSignature = '';
                         }
@@ -177,7 +181,9 @@ export async function* streamSSEResponse(response, originalModel) {
                         currentBlockType = 'tool_use';
                         stopReason = 'tool_use';
 
-                        const toolId = part.functionCall.id || `toolu_${crypto.randomBytes(12).toString('hex')}`;
+                        const toolId =
+                            part.functionCall.id ||
+                            `toolu_${crypto.randomBytes(12).toString('hex')}`;
 
                         // For Gemini, include the thoughtSignature in the tool_use block
                         // so it can be sent back in subsequent requests
@@ -189,7 +195,10 @@ export async function* streamSSEResponse(response, originalModel) {
                         };
 
                         // Store the signature in the tool_use block for later retrieval
-                        if (functionCallSignature && functionCallSignature.length >= MIN_SIGNATURE_LENGTH) {
+                        if (
+                            functionCallSignature &&
+                            functionCallSignature.length >= MIN_SIGNATURE_LENGTH
+                        ) {
                             toolUseBlock.thoughtSignature = functionCallSignature;
                             // Cache for future requests (Claude Code may strip this field)
                             cacheSignature(toolId, functionCallSignature);
@@ -215,7 +224,10 @@ export async function* streamSSEResponse(response, originalModel) {
                             yield {
                                 type: 'content_block_delta',
                                 index: blockIndex,
-                                delta: { type: 'signature_delta', signature: currentThinkingSignature }
+                                delta: {
+                                    type: 'signature_delta',
+                                    signature: currentThinkingSignature
+                                }
                             };
                             currentThinkingSignature = '';
                         }
@@ -253,7 +265,6 @@ export async function* streamSSEResponse(response, originalModel) {
                         stopReason = 'end_turn';
                     }
                 }
-
             } catch (parseError) {
                 logger.warn('[CloudCode] SSE parse error:', parseError.message);
             }

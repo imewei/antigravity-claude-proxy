@@ -4,10 +4,7 @@
  * Handles provisioning of managed projects for accounts that don't have one.
  */
 
-import {
-    ONBOARD_USER_ENDPOINTS,
-    ANTIGRAVITY_HEADERS
-} from '../constants.js';
+import { ONBOARD_USER_ENDPOINTS, ANTIGRAVITY_HEADERS } from '../constants.js';
 import { logger } from '../utils/logger.js';
 import { sleep } from '../utils/helpers.js';
 
@@ -43,7 +40,13 @@ export function getDefaultTierId(allowedTiers) {
  * @param {number} [delayMs=5000] - Delay between polling attempts
  * @returns {Promise<string|null>} Managed project ID or null if failed
  */
-export async function onboardUser(token, tierId, projectId = undefined, maxAttempts = 10, delayMs = 5000) {
+export async function onboardUser(
+    token,
+    tierId,
+    projectId = undefined,
+    maxAttempts = 10,
+    delayMs = 5000
+) {
     const metadata = {
         ideType: 'IDE_UNSPECIFIED',
         platform: 'PLATFORM_UNSPECIFIED',
@@ -70,7 +73,7 @@ export async function onboardUser(token, tierId, projectId = undefined, maxAttem
                 const response = await fetch(`${endpoint}/v1internal:onboardUser`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        Authorization: `Bearer ${token}`,
                         'Content-Type': 'application/json',
                         ...ANTIGRAVITY_HEADERS
                     },
@@ -79,12 +82,17 @@ export async function onboardUser(token, tierId, projectId = undefined, maxAttem
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    logger.warn(`[Onboarding] onboardUser failed at ${endpoint}: ${response.status} - ${errorText}`);
+                    logger.warn(
+                        `[Onboarding] onboardUser failed at ${endpoint}: ${response.status} - ${errorText}`
+                    );
                     break; // Try next endpoint
                 }
 
                 const data = await response.json();
-                logger.debug(`[Onboarding] onboardUser response (attempt ${attempt + 1}):`, JSON.stringify(data));
+                logger.debug(
+                    `[Onboarding] onboardUser response (attempt ${attempt + 1}):`,
+                    JSON.stringify(data)
+                );
 
                 // Check if onboarding is complete
                 const managedProjectId = data.response?.cloudaicompanionProject?.id;

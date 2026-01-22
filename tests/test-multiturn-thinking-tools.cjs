@@ -15,7 +15,11 @@
  * Runs for both Claude and Gemini model families.
  */
 const { makeRequest, analyzeContent, commonTools } = require('./helpers/http-client.cjs');
-const { getTestModels, getModelConfig, familySupportsThinking } = require('./helpers/test-models.cjs');
+const {
+    getTestModels,
+    getModelConfig,
+    familySupportsThinking
+} = require('./helpers/test-models.cjs');
 
 const tools = [commonTools.searchFiles, commonTools.readFile];
 
@@ -39,7 +43,8 @@ async function runTestsForModel(family, model) {
 
     messages.push({
         role: 'user',
-        content: 'Find the package.json file and tell me what dependencies it has. Use search_files first.'
+        content:
+            'Find the package.json file and tell me what dependencies it has. Use search_files first.'
     });
 
     const turn1 = await makeRequest({
@@ -57,22 +62,28 @@ async function runTestsForModel(family, model) {
         results.push({ name: 'Turn 1: Initial request', passed: false });
     } else {
         const analysis = analyzeContent(turn1.content || []);
-        console.log(`  Thinking: ${analysis.hasThinking ? 'YES' : 'NO'} (${analysis.thinking.length} blocks)`);
+        console.log(
+            `  Thinking: ${analysis.hasThinking ? 'YES' : 'NO'} (${analysis.thinking.length} blocks)`
+        );
         console.log(`  Signature: ${analysis.hasSignature ? 'YES' : 'NO'}`);
-        console.log(`  Tool Use: ${analysis.hasToolUse ? 'YES' : 'NO'} (${analysis.toolUse.length} calls)`);
+        console.log(
+            `  Tool Use: ${analysis.hasToolUse ? 'YES' : 'NO'} (${analysis.toolUse.length} calls)`
+        );
         console.log(`  Text: ${analysis.hasText ? 'YES' : 'NO'}`);
 
         if (analysis.hasThinking && analysis.thinking[0].thinking) {
             console.log(`  Thinking: "${analysis.thinking[0].thinking.substring(0, 60)}..."`);
         }
         if (analysis.hasToolUse) {
-            console.log(`  Tool: ${analysis.toolUse[0].name}(${JSON.stringify(analysis.toolUse[0].input)})`);
+            console.log(
+                `  Tool: ${analysis.toolUse[0].name}(${JSON.stringify(analysis.toolUse[0].input)})`
+            );
         }
 
         // For thinking models, expect signature + tool use
         // Note: Gemini doesn't always produce thinking blocks, but does put signatures on tool_use
         const passed = expectThinking
-            ? (analysis.hasSignature && analysis.hasToolUse)  // Signature required, thinking optional
+            ? analysis.hasSignature && analysis.hasToolUse // Signature required, thinking optional
             : analysis.hasToolUse;
         results.push({ name: 'Turn 1: Thinking + Signature + Tool Use', passed });
         if (!passed) allPassed = false;
@@ -89,15 +100,18 @@ async function runTestsForModel(family, model) {
         console.log('-'.repeat(40));
 
         const lastAssistant = messages[messages.length - 1];
-        const toolUseBlock = lastAssistant.content.find(b => b.type === 'tool_use');
+        const toolUseBlock = lastAssistant.content.find((b) => b.type === 'tool_use');
 
         messages.push({
             role: 'user',
-            content: [{
-                type: 'tool_result',
-                tool_use_id: toolUseBlock.id,
-                content: 'Found files:\n- /project/package.json (root, 2.3KB, modified 2 days ago)\n- /project/packages/core/package.json (workspace, 1.1KB, modified 1 hour ago)\n- /project/packages/legacy/package.json (deprecated, 0.8KB, modified 1 year ago)\n- /project/node_modules/lodash/package.json (dependency, 3.2KB)\n\nIMPORTANT: Before proceeding, reason through which files are most relevant. Consider: Are node_modules relevant? Should deprecated packages be included? Which workspace packages matter for the user\'s question about dependencies?'
-            }]
+            content: [
+                {
+                    type: 'tool_result',
+                    tool_use_id: toolUseBlock.id,
+                    content:
+                        "Found files:\n- /project/package.json (root, 2.3KB, modified 2 days ago)\n- /project/packages/core/package.json (workspace, 1.1KB, modified 1 hour ago)\n- /project/packages/legacy/package.json (deprecated, 0.8KB, modified 1 year ago)\n- /project/node_modules/lodash/package.json (dependency, 3.2KB)\n\nIMPORTANT: Before proceeding, reason through which files are most relevant. Consider: Are node_modules relevant? Should deprecated packages be included? Which workspace packages matter for the user's question about dependencies?"
+                }
+            ]
         });
 
         const turn2 = await makeRequest({
@@ -115,16 +129,22 @@ async function runTestsForModel(family, model) {
             results.push({ name: 'Turn 2: After tool result', passed: false });
         } else {
             const analysis = analyzeContent(turn2.content || []);
-            console.log(`  Thinking: ${analysis.hasThinking ? 'YES' : 'NO'} (${analysis.thinking.length} blocks)`);
+            console.log(
+                `  Thinking: ${analysis.hasThinking ? 'YES' : 'NO'} (${analysis.thinking.length} blocks)`
+            );
             console.log(`  Signature: ${analysis.hasSignature ? 'YES' : 'NO'}`);
-            console.log(`  Tool Use: ${analysis.hasToolUse ? 'YES' : 'NO'} (${analysis.toolUse.length} calls)`);
+            console.log(
+                `  Tool Use: ${analysis.hasToolUse ? 'YES' : 'NO'} (${analysis.toolUse.length} calls)`
+            );
             console.log(`  Text: ${analysis.hasText ? 'YES' : 'NO'}`);
 
             if (analysis.hasThinking && analysis.thinking[0].thinking) {
                 console.log(`  Thinking: "${analysis.thinking[0].thinking.substring(0, 60)}..."`);
             }
             if (analysis.hasToolUse) {
-                console.log(`  Tool: ${analysis.toolUse[0].name}(${JSON.stringify(analysis.toolUse[0].input)})`);
+                console.log(
+                    `  Tool: ${analysis.toolUse[0].name}(${JSON.stringify(analysis.toolUse[0].input)})`
+                );
             }
 
             // Either tool use (to read file) or text response is acceptable
@@ -143,7 +163,7 @@ async function runTestsForModel(family, model) {
     // ===== TURN 3: Final tool result and response =====
     if (messages.length >= 4) {
         const lastAssistant = messages[messages.length - 1];
-        const toolUseBlocks = lastAssistant.content?.filter(b => b.type === 'tool_use') || [];
+        const toolUseBlocks = lastAssistant.content?.filter((b) => b.type === 'tool_use') || [];
 
         if (toolUseBlocks.length > 0) {
             console.log('\nTURN 3: Provide file content, expect final response');
@@ -153,12 +173,17 @@ async function runTestsForModel(family, model) {
             const toolResults = toolUseBlocks.map((toolUseBlock, idx) => ({
                 type: 'tool_result',
                 tool_use_id: toolUseBlock.id,
-                content: JSON.stringify({
-                    name: idx === 0 ? 'my-project' : 'core-package',
-                    dependencies: idx === 0
-                        ? { express: '^4.18.2', cors: '^2.8.5' }
-                        : { lodash: '^4.17.21' }
-                }, null, 2)
+                content: JSON.stringify(
+                    {
+                        name: idx === 0 ? 'my-project' : 'core-package',
+                        dependencies:
+                            idx === 0
+                                ? { express: '^4.18.2', cors: '^2.8.5' }
+                                : { lodash: '^4.17.21' }
+                    },
+                    null,
+                    2
+                )
             }));
 
             messages.push({
@@ -180,22 +205,32 @@ async function runTestsForModel(family, model) {
                 allPassed = false;
                 results.push({ name: 'Turn 3: Final response', passed: false });
             } else {
-                            const analysis = analyzeContent(turn3.content || []);
-                console.log(`  Thinking: ${analysis.hasThinking ? 'YES' : 'NO'} (${analysis.thinking.length} blocks)`);
+                const analysis = analyzeContent(turn3.content || []);
+                console.log(
+                    `  Thinking: ${analysis.hasThinking ? 'YES' : 'NO'} (${analysis.thinking.length} blocks)`
+                );
                 console.log(`  Signature: ${analysis.hasSignature ? 'YES' : 'NO'}`);
-                console.log(`  Tool Use: ${analysis.hasToolUse ? 'YES' : 'NO'} (${analysis.toolUse.length} calls)`);
+                console.log(
+                    `  Tool Use: ${analysis.hasToolUse ? 'YES' : 'NO'} (${analysis.toolUse.length} calls)`
+                );
                 console.log(`  Text: ${analysis.hasText ? 'YES' : 'NO'}`);
 
                 if (analysis.hasText && analysis.text[0].text) {
                     console.log(`  Response: "${analysis.text[0].text.substring(0, 100)}..."`);
                 }
                 if (analysis.hasToolUse) {
-                    console.log(`  Tool: ${analysis.toolUse[0].name}(${JSON.stringify(analysis.toolUse[0].input)})`);
+                    console.log(
+                        `  Tool: ${analysis.toolUse[0].name}(${JSON.stringify(analysis.toolUse[0].input)})`
+                    );
                 }
 
                 // For final turn: expect text OR another tool call (model may need more info)
                 const passed = analysis.hasText || analysis.hasToolUse;
-                const responseType = analysis.hasText ? 'text' : (analysis.hasToolUse ? 'tool_use' : 'none');
+                const responseType = analysis.hasText
+                    ? 'text'
+                    : analysis.hasToolUse
+                      ? 'tool_use'
+                      : 'none';
                 results.push({ name: `Turn 3: Response (${responseType})`, passed });
                 if (!passed) allPassed = false;
             }
@@ -213,7 +248,9 @@ async function runTestsForModel(family, model) {
     }
 
     console.log('\n' + '='.repeat(60));
-    console.log(`[${family.toUpperCase()}] ${allPassed ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`);
+    console.log(
+        `[${family.toUpperCase()}] ${allPassed ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`
+    );
     console.log('='.repeat(60));
 
     return allPassed;
@@ -232,13 +269,15 @@ async function runTests() {
     console.log('\n' + '='.repeat(60));
     console.log('FINAL RESULT');
     console.log('='.repeat(60));
-    console.log(`Overall: ${allPassed ? 'ALL MODEL FAMILIES PASSED' : 'SOME MODEL FAMILIES FAILED'}`);
+    console.log(
+        `Overall: ${allPassed ? 'ALL MODEL FAMILIES PASSED' : 'SOME MODEL FAMILIES FAILED'}`
+    );
     console.log('='.repeat(60));
 
     process.exit(allPassed ? 0 : 1);
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
     console.error('Test failed with error:', err);
     process.exit(1);
 });

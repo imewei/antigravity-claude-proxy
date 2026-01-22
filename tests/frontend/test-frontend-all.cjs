@@ -1,7 +1,7 @@
 /**
  * Frontend Test Runner
  * Runs all frontend test suites
- * 
+ *
  * Run: node tests/frontend/test-frontend-all.cjs
  */
 
@@ -69,7 +69,9 @@ async function runTests() {
 
     for (const result of results) {
         const icon = result.failed === 0 ? '✅' : '❌';
-        console.log(`${icon} ${result.file}: ${result.passed} passed, ${result.failed} failed (${result.status})`);
+        console.log(
+            `${icon} ${result.file}: ${result.passed} passed, ${result.failed} failed (${result.status})`
+        );
     }
 
     console.log('\n' + '─'.repeat(60));
@@ -79,7 +81,7 @@ async function runTests() {
     process.exit(totalFailed > 0 ? 1 : 0);
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
     console.error('Test runner crashed:', err);
     process.exit(1);
 });

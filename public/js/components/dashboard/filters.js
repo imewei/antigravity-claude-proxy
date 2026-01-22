@@ -23,9 +23,9 @@ window.DashboardFilters = window.DashboardFilters || {};
  * Get initial filter state
  * @returns {object} Initial state for filter properties
  */
-window.DashboardFilters.getInitialState = function() {
+window.DashboardFilters.getInitialState = function () {
     return {
-        timeRange: '24h',  // '1h', '6h', '24h', '7d', 'all'
+        timeRange: '24h', // '1h', '6h', '24h', '7d', 'all'
         displayMode: 'model',
         selectedFamilies: [],
         selectedModels: {},
@@ -39,7 +39,7 @@ window.DashboardFilters.getInitialState = function() {
  * Load filter preferences from localStorage
  * @param {object} component - Dashboard component instance
  */
-window.DashboardFilters.loadPreferences = function(component) {
+window.DashboardFilters.loadPreferences = function (component) {
     try {
         const saved = localStorage.getItem('dashboard_chart_prefs');
         if (saved) {
@@ -58,14 +58,17 @@ window.DashboardFilters.loadPreferences = function(component) {
  * Save filter preferences to localStorage
  * @param {object} component - Dashboard component instance
  */
-window.DashboardFilters.savePreferences = function(component) {
+window.DashboardFilters.savePreferences = function (component) {
     try {
-        localStorage.setItem('dashboard_chart_prefs', JSON.stringify({
-            timeRange: component.timeRange,
-            displayMode: component.displayMode,
-            selectedFamilies: component.selectedFamilies,
-            selectedModels: component.selectedModels
-        }));
+        localStorage.setItem(
+            'dashboard_chart_prefs',
+            JSON.stringify({
+                timeRange: component.timeRange,
+                displayMode: component.displayMode,
+                selectedFamilies: component.selectedFamilies,
+                selectedModels: component.selectedModels
+            })
+        );
     } catch (e) {
         console.error('Failed to save dashboard preferences:', e);
     }
@@ -76,7 +79,7 @@ window.DashboardFilters.savePreferences = function(component) {
  * @param {object} component - Dashboard component instance
  * @param {string} mode - 'family' or 'model'
  */
-window.DashboardFilters.setDisplayMode = function(component, mode) {
+window.DashboardFilters.setDisplayMode = function (component, mode) {
     component.displayMode = mode;
     component.showDisplayModeDropdown = false;
     window.DashboardFilters.savePreferences(component);
@@ -89,7 +92,7 @@ window.DashboardFilters.setDisplayMode = function(component, mode) {
  * @param {object} component - Dashboard component instance
  * @param {string} range - '1h', '6h', '24h', '7d', 'all'
  */
-window.DashboardFilters.setTimeRange = function(component, range) {
+window.DashboardFilters.setTimeRange = function (component, range) {
     component.timeRange = range;
     component.showTimeRangeDropdown = false;
     window.DashboardFilters.savePreferences(component);
@@ -101,14 +104,19 @@ window.DashboardFilters.setTimeRange = function(component, range) {
  * @param {string} range - Time range code
  * @returns {number|null} Cutoff timestamp or null for 'all'
  */
-window.DashboardFilters.getTimeRangeCutoff = function(range) {
+window.DashboardFilters.getTimeRangeCutoff = function (range) {
     const now = Date.now();
     switch (range) {
-        case '1h': return now - 1 * 60 * 60 * 1000;
-        case '6h': return now - 6 * 60 * 60 * 1000;
-        case '24h': return now - 24 * 60 * 60 * 1000;
-        case '7d': return now - 7 * 24 * 60 * 60 * 1000;
-        default: return null; // 'all'
+        case '1h':
+            return now - 1 * 60 * 60 * 1000;
+        case '6h':
+            return now - 6 * 60 * 60 * 1000;
+        case '24h':
+            return now - 24 * 60 * 60 * 1000;
+        case '7d':
+            return now - 7 * 24 * 60 * 60 * 1000;
+        default:
+            return null; // 'all'
     }
 };
 
@@ -117,7 +125,7 @@ window.DashboardFilters.getTimeRangeCutoff = function(range) {
  * @param {object} component - Dashboard component instance
  * @returns {object} Filtered history data
  */
-window.DashboardFilters.getFilteredHistoryData = function(component) {
+window.DashboardFilters.getFilteredHistoryData = function (component) {
     const history = component.historyData;
     if (!history || Object.keys(history).length === 0) return {};
 
@@ -139,14 +147,19 @@ window.DashboardFilters.getFilteredHistoryData = function(component) {
  * @param {object} component - Dashboard component instance
  * @returns {string} Translated label
  */
-window.DashboardFilters.getTimeRangeLabel = function(component) {
+window.DashboardFilters.getTimeRangeLabel = function (component) {
     const store = Alpine.store('global');
     switch (component.timeRange) {
-        case '1h': return store.t('last1Hour');
-        case '6h': return store.t('last6Hours');
-        case '24h': return store.t('last24Hours');
-        case '7d': return store.t('last7Days');
-        default: return store.t('allTime');
+        case '1h':
+            return store.t('last1Hour');
+        case '6h':
+            return store.t('last6Hours');
+        case '24h':
+            return store.t('last24Hours');
+        case '7d':
+            return store.t('last7Days');
+        default:
+            return store.t('allTime');
     }
 };
 
@@ -155,7 +168,7 @@ window.DashboardFilters.getTimeRangeLabel = function(component) {
  * @param {object} component - Dashboard component instance
  * @param {string} family - Family name (e.g., 'claude', 'gemini')
  */
-window.DashboardFilters.toggleFamily = function(component, family) {
+window.DashboardFilters.toggleFamily = function (component, family) {
     const index = component.selectedFamilies.indexOf(family);
     if (index > -1) {
         component.selectedFamilies.splice(index, 1);
@@ -173,7 +186,7 @@ window.DashboardFilters.toggleFamily = function(component, family) {
  * @param {string} family - Family name
  * @param {string} model - Model name
  */
-window.DashboardFilters.toggleModel = function(component, family, model) {
+window.DashboardFilters.toggleModel = function (component, family, model) {
     if (!component.selectedModels[family]) {
         component.selectedModels[family] = [];
     }
@@ -194,7 +207,7 @@ window.DashboardFilters.toggleModel = function(component, family, model) {
  * @param {string} family - Family name
  * @returns {boolean}
  */
-window.DashboardFilters.isFamilySelected = function(component, family) {
+window.DashboardFilters.isFamilySelected = function (component, family) {
     return component.selectedFamilies.includes(family);
 };
 
@@ -205,7 +218,7 @@ window.DashboardFilters.isFamilySelected = function(component, family) {
  * @param {string} model - Model name
  * @returns {boolean}
  */
-window.DashboardFilters.isModelSelected = function(component, family, model) {
+window.DashboardFilters.isModelSelected = function (component, family, model) {
     return component.selectedModels[family]?.includes(model) || false;
 };
 
@@ -213,9 +226,9 @@ window.DashboardFilters.isModelSelected = function(component, family, model) {
  * Select all families and models
  * @param {object} component - Dashboard component instance
  */
-window.DashboardFilters.selectAll = function(component) {
+window.DashboardFilters.selectAll = function (component) {
     component.selectedFamilies = [...component.families];
-    component.families.forEach(family => {
+    component.families.forEach((family) => {
         component.selectedModels[family] = [...(component.modelTree[family] || [])];
     });
     window.DashboardFilters.savePreferences(component);
@@ -227,7 +240,7 @@ window.DashboardFilters.selectAll = function(component) {
  * Deselect all families and models
  * @param {object} component - Dashboard component instance
  */
-window.DashboardFilters.deselectAll = function(component) {
+window.DashboardFilters.deselectAll = function (component) {
     component.selectedFamilies = [];
     component.selectedModels = {};
     window.DashboardFilters.savePreferences(component);
@@ -240,7 +253,7 @@ window.DashboardFilters.deselectAll = function(component) {
  * @param {string} family - Family name
  * @returns {string} Color value
  */
-window.DashboardFilters.getFamilyColor = function(family) {
+window.DashboardFilters.getFamilyColor = function (family) {
     const FAMILY_COLORS = window.DashboardConstants?.FAMILY_COLORS || {};
     return FAMILY_COLORS[family] || FAMILY_COLORS.other;
 };
@@ -251,9 +264,9 @@ window.DashboardFilters.getFamilyColor = function(family) {
  * @param {number} modelIndex - Index of model within family
  * @returns {string} Color value
  */
-window.DashboardFilters.getModelColor = function(family, modelIndex) {
+window.DashboardFilters.getModelColor = function (family, modelIndex) {
     const MODEL_COLORS = window.DashboardConstants?.MODEL_COLORS || [];
-    const baseIndex = family === 'claude' ? 0 : (family === 'gemini' ? 4 : 8);
+    const baseIndex = family === 'claude' ? 0 : family === 'gemini' ? 4 : 8;
     return MODEL_COLORS[(baseIndex + modelIndex) % MODEL_COLORS.length];
 };
 
@@ -262,12 +275,13 @@ window.DashboardFilters.getModelColor = function(family, modelIndex) {
  * @param {object} component - Dashboard component instance
  * @returns {string} Selected count string (e.g., "3/5")
  */
-window.DashboardFilters.getSelectedCount = function(component) {
+window.DashboardFilters.getSelectedCount = function (component) {
     if (component.displayMode === 'family') {
         return `${component.selectedFamilies.length}/${component.families.length}`;
     }
-    let selected = 0, total = 0;
-    component.families.forEach(family => {
+    let selected = 0,
+        total = 0;
+    component.families.forEach((family) => {
         const models = component.modelTree[family] || [];
         total += models.length;
         selected += (component.selectedModels[family] || []).length;
@@ -279,11 +293,14 @@ window.DashboardFilters.getSelectedCount = function(component) {
  * Auto-select new families/models that haven't been configured
  * @param {object} component - Dashboard component instance
  */
-window.DashboardFilters.autoSelectNew = function(component) {
+window.DashboardFilters.autoSelectNew = function (component) {
     // If no preferences saved, select all
-    if (component.selectedFamilies.length === 0 && Object.keys(component.selectedModels).length === 0) {
+    if (
+        component.selectedFamilies.length === 0 &&
+        Object.keys(component.selectedModels).length === 0
+    ) {
         component.selectedFamilies = [...component.families];
-        component.families.forEach(family => {
+        component.families.forEach((family) => {
             component.selectedModels[family] = [...(component.modelTree[family] || [])];
         });
         window.DashboardFilters.savePreferences(component);
@@ -291,14 +308,14 @@ window.DashboardFilters.autoSelectNew = function(component) {
     }
 
     // Add new families/models that appeared
-    component.families.forEach(family => {
+    component.families.forEach((family) => {
         if (!component.selectedFamilies.includes(family)) {
             component.selectedFamilies.push(family);
         }
         if (!component.selectedModels[family]) {
             component.selectedModels[family] = [];
         }
-        (component.modelTree[family] || []).forEach(model => {
+        (component.modelTree[family] || []).forEach((model) => {
             if (!component.selectedModels[family].includes(model)) {
                 component.selectedModels[family].push(model);
             }
@@ -311,7 +328,7 @@ window.DashboardFilters.autoSelectNew = function(component) {
  * @param {object} component - Dashboard component instance
  * @param {number} n - Number of models to select (default: 5)
  */
-window.DashboardFilters.autoSelectTopN = function(component, n = 5) {
+window.DashboardFilters.autoSelectTopN = function (component, n = 5) {
     // Calculate usage for each model over past 24 hours
     const usage = {};
     const now = Date.now();

@@ -61,9 +61,15 @@ async function runTests() {
         // Construct chunks that simulate the Google SSE format
         // We split "Hello World" into "Hello", " ", "World"
         const chunks = [
-            'data: ' + JSON.stringify({ candidates: [{ content: { parts: [{ text: "Hello" }] } }] }) + '\n\n',
-            'data: ' + JSON.stringify({ candidates: [{ content: { parts: [{ text: " " }] } }] }) + '\n\n',
-            'data: ' + JSON.stringify({ candidates: [{ content: { parts: [{ text: "World" }] } }] }) + '\n\n'
+            'data: ' +
+                JSON.stringify({ candidates: [{ content: { parts: [{ text: 'Hello' }] } }] }) +
+                '\n\n',
+            'data: ' +
+                JSON.stringify({ candidates: [{ content: { parts: [{ text: ' ' }] } }] }) +
+                '\n\n',
+            'data: ' +
+                JSON.stringify({ candidates: [{ content: { parts: [{ text: 'World' }] } }] }) +
+                '\n\n'
         ];
 
         const response = new MockResponse(chunks);
@@ -84,10 +90,18 @@ async function runTests() {
     // Test Case: Empty string (should be skipped)
     await test('Skips truly empty strings but keeps newlines', async () => {
         const chunks = [
-            'data: ' + JSON.stringify({ candidates: [{ content: { parts: [{ text: "Line1" }] } }] }) + '\n\n',
-            'data: ' + JSON.stringify({ candidates: [{ content: { parts: [{ text: "" }] } }] }) + '\n\n', // Empty
-            'data: ' + JSON.stringify({ candidates: [{ content: { parts: [{ text: "\n" }] } }] }) + '\n\n', // Newline
-            'data: ' + JSON.stringify({ candidates: [{ content: { parts: [{ text: "Line2" }] } }] }) + '\n\n'
+            'data: ' +
+                JSON.stringify({ candidates: [{ content: { parts: [{ text: 'Line1' }] } }] }) +
+                '\n\n',
+            'data: ' +
+                JSON.stringify({ candidates: [{ content: { parts: [{ text: '' }] } }] }) +
+                '\n\n', // Empty
+            'data: ' +
+                JSON.stringify({ candidates: [{ content: { parts: [{ text: '\n' }] } }] }) +
+                '\n\n', // Newline
+            'data: ' +
+                JSON.stringify({ candidates: [{ content: { parts: [{ text: 'Line2' }] } }] }) +
+                '\n\n'
         ];
 
         const response = new MockResponse(chunks);
@@ -113,7 +127,7 @@ async function runTests() {
     }
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
     console.error('Test suite failed:', err);
     process.exit(1);
 });

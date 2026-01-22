@@ -28,9 +28,7 @@ async function testClaudeToGemini(CLAUDE_MODEL, GEMINI_MODEL) {
     console.log('TURN 1: Request to Claude (get thinking signature)');
     console.log('-'.repeat(40));
 
-    const turn1Messages = [
-        { role: 'user', content: 'Run the command "ls -la" to list files.' }
-    ];
+    const turn1Messages = [{ role: 'user', content: 'Run the command "ls -la" to list files.' }];
 
     const turn1Result = await streamRequest({
         model: CLAUDE_MODEL,
@@ -87,11 +85,14 @@ async function testClaudeToGemini(CLAUDE_MODEL, GEMINI_MODEL) {
         { role: 'assistant', content: assistantContent },
         {
             role: 'user',
-            content: [{
-                type: 'tool_result',
-                tool_use_id: turn1Content.toolUse[0].id,
-                content: 'total 16\ndrwxr-xr-x  5 user staff  160 Jan  1 12:00 .\ndrwxr-xr-x  3 user staff   96 Jan  1 12:00 ..\n-rw-r--r--  1 user staff  100 Jan  1 12:00 file.txt'
-            }]
+            content: [
+                {
+                    type: 'tool_result',
+                    tool_use_id: turn1Content.toolUse[0].id,
+                    content:
+                        'total 16\ndrwxr-xr-x  5 user staff  160 Jan  1 12:00 .\ndrwxr-xr-x  3 user staff   96 Jan  1 12:00 ..\n-rw-r--r--  1 user staff  100 Jan  1 12:00 file.txt'
+                }
+            ]
         }
     ];
 
@@ -196,18 +197,22 @@ async function testGeminiToClaude(CLAUDE_MODEL, GEMINI_MODEL) {
     // TURN 2: Switch to Claude with Gemini's thinking signature in history
     console.log('\nTURN 2: Request to Claude (with Gemini thinking in history)');
     console.log('-'.repeat(40));
-    console.log(`  Assistant content being sent: ${JSON.stringify(assistantContent).substring(0, 400)}`);
+    console.log(
+        `  Assistant content being sent: ${JSON.stringify(assistantContent).substring(0, 400)}`
+    );
 
     const turn2Messages = [
         { role: 'user', content: 'Run the command "pwd" to show current directory.' },
         { role: 'assistant', content: assistantContent },
         {
             role: 'user',
-            content: [{
-                type: 'tool_result',
-                tool_use_id: turn1Content.toolUse[0].id,
-                content: '/home/user/projects'
-            }]
+            content: [
+                {
+                    type: 'tool_result',
+                    tool_use_id: turn1Content.toolUse[0].id,
+                    content: '/home/user/projects'
+                }
+            ]
         }
     ];
 
@@ -287,18 +292,20 @@ async function testGeminiToClaudeColdCache(CLAUDE_MODEL, GEMINI_MODEL) {
     // Claude Code strips signatures it doesn't understand
     assistantContent.push({
         type: 'thinking',
-        thinking: turn1Content.hasThinking && turn1Content.thinking[0]
-            ? turn1Content.thinking[0].thinking
-            : 'I need to run the whoami command.'
+        thinking:
+            turn1Content.hasThinking && turn1Content.thinking[0]
+                ? turn1Content.thinking[0].thinking
+                : 'I need to run the whoami command.'
         // NO signature field - simulating Claude Code stripping it
     });
 
     // Add text block
     assistantContent.push({
         type: 'text',
-        text: turn1Content.hasText && turn1Content.text[0]
-            ? turn1Content.text[0].text
-            : 'I will run the whoami command for you.'
+        text:
+            turn1Content.hasText && turn1Content.text[0]
+                ? turn1Content.text[0].text
+                : 'I will run the whoami command for you.'
     });
 
     // Add tool_use blocks (also without thoughtSignature)
@@ -324,11 +331,13 @@ async function testGeminiToClaudeColdCache(CLAUDE_MODEL, GEMINI_MODEL) {
         { role: 'assistant', content: assistantContent },
         {
             role: 'user',
-            content: [{
-                type: 'tool_result',
-                tool_use_id: turn1Content.toolUse[0].id,
-                content: 'testuser'
-            }]
+            content: [
+                {
+                    type: 'tool_result',
+                    tool_use_id: turn1Content.toolUse[0].id,
+                    content: 'testuser'
+                }
+            ]
         }
     ];
 
@@ -355,9 +364,10 @@ async function testGeminiToClaudeColdCache(CLAUDE_MODEL, GEMINI_MODEL) {
         return { passed };
     } catch (error) {
         // Check for the specific error from issue #120
-        const isExpectedError = error.message.includes('Expected') &&
-                               error.message.includes('thinking') &&
-                               error.message.includes('found');
+        const isExpectedError =
+            error.message.includes('Expected') &&
+            error.message.includes('thinking') &&
+            error.message.includes('found');
         console.log(`  Error: ${error.message.substring(0, 200)}`);
         console.log(`  Is issue #120 error: ${isExpectedError ? 'YES' : 'NO'}`);
         console.log(`  Result: FAIL`);
@@ -378,9 +388,7 @@ async function testSameModelContinuation(CLAUDE_MODEL) {
     console.log('TURN 1: Request to Claude');
     console.log('-'.repeat(40));
 
-    const turn1Messages = [
-        { role: 'user', content: 'Run "echo hello" command.' }
-    ];
+    const turn1Messages = [{ role: 'user', content: 'Run "echo hello" command.' }];
 
     const turn1Result = await streamRequest({
         model: CLAUDE_MODEL,
@@ -434,11 +442,13 @@ async function testSameModelContinuation(CLAUDE_MODEL) {
         { role: 'assistant', content: assistantContent },
         {
             role: 'user',
-            content: [{
-                type: 'tool_result',
-                tool_use_id: turn1Content.toolUse[0].id,
-                content: 'hello'
-            }]
+            content: [
+                {
+                    type: 'tool_result',
+                    tool_use_id: turn1Content.toolUse[0].id,
+                    content: 'hello'
+                }
+            ]
         }
     ];
 
@@ -483,9 +493,7 @@ async function testSameModelContinuationGemini(GEMINI_MODEL) {
     console.log('TURN 1: Request to Gemini');
     console.log('-'.repeat(40));
 
-    const turn1Messages = [
-        { role: 'user', content: 'Run "echo world" command.' }
-    ];
+    const turn1Messages = [{ role: 'user', content: 'Run "echo world" command.' }];
 
     const turn1Result = await streamRequest({
         model: GEMINI_MODEL,
@@ -544,11 +552,13 @@ async function testSameModelContinuationGemini(GEMINI_MODEL) {
         { role: 'assistant', content: assistantContent },
         {
             role: 'user',
-            content: [{
-                type: 'tool_result',
-                tool_use_id: turn1Content.toolUse[0].id,
-                content: 'world'
-            }]
+            content: [
+                {
+                    type: 'tool_result',
+                    tool_use_id: turn1Content.toolUse[0].id,
+                    content: 'world'
+                }
+            ]
         }
     ];
 
@@ -622,7 +632,7 @@ async function main() {
 
     let allPassed = true;
     for (const result of results) {
-        const status = result.skipped ? 'SKIP' : (result.passed ? 'PASS' : 'FAIL');
+        const status = result.skipped ? 'SKIP' : result.passed ? 'PASS' : 'FAIL';
         console.log(`  [${status}] ${result.name}`);
         if (!result.passed && !result.skipped) allPassed = false;
     }
@@ -634,7 +644,7 @@ async function main() {
     process.exit(allPassed ? 0 : 1);
 }
 
-main().catch(err => {
+main().catch((err) => {
     console.error('Test error:', err);
     process.exit(1);
 });

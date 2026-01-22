@@ -105,7 +105,9 @@ export function convertContentToParts(content, isClaudeModel = false, isGeminiMo
                 if (!signature && block.id) {
                     signature = getCachedSignature(block.id);
                     if (signature) {
-                        logger.debug(`[ContentConverter] Restored signature from cache for: ${block.id}`);
+                        logger.debug(
+                            `[ContentConverter] Restored signature from cache for: ${block.id}`
+                        );
                     }
                 }
 
@@ -135,10 +137,12 @@ export function convertContentToParts(content, isClaudeModel = false, isGeminiMo
 
                 // Extract text content
                 const texts = responseContent
-                    .filter(c => c.type === 'text')
-                    .map(c => c.text)
+                    .filter((c) => c.type === 'text')
+                    .map((c) => c.text)
                     .join('\n');
-                responseContent = { result: texts || (imageParts.length > 0 ? 'Image attached' : '') };
+                responseContent = {
+                    result: texts || (imageParts.length > 0 ? 'Image attached' : '')
+                };
             }
 
             const functionResponse = {
@@ -163,14 +167,23 @@ export function convertContentToParts(content, isClaudeModel = false, isGeminiMo
                 const targetFamily = isClaudeModel ? 'claude' : isGeminiModel ? 'gemini' : null;
 
                 // Drop blocks with incompatible signatures for Gemini (cross-model switch)
-                if (isGeminiModel && signatureFamily && targetFamily && signatureFamily !== targetFamily) {
-                    logger.debug(`[ContentConverter] Dropping incompatible ${signatureFamily} thinking for ${targetFamily} model`);
+                if (
+                    isGeminiModel &&
+                    signatureFamily &&
+                    targetFamily &&
+                    signatureFamily !== targetFamily
+                ) {
+                    logger.debug(
+                        `[ContentConverter] Dropping incompatible ${signatureFamily} thinking for ${targetFamily} model`
+                    );
                     continue;
                 }
 
                 // Drop blocks with unknown signature origin for Gemini (cold cache - safe default)
                 if (isGeminiModel && !signatureFamily && targetFamily) {
-                    logger.debug(`[ContentConverter] Dropping thinking with unknown signature origin`);
+                    logger.debug(
+                        `[ContentConverter] Dropping thinking with unknown signature origin`
+                    );
                     continue;
                 }
 

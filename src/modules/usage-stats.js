@@ -111,7 +111,7 @@ function prune() {
     const cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     let pruned = false;
-    Object.keys(history).forEach(key => {
+    Object.keys(history).forEach((key) => {
         if (new Date(key) < cutoff) {
             delete history[key];
             pruned = true;
@@ -170,8 +170,14 @@ function setupMiddleware(app) {
     }, 60 * 1000);
 
     // Save synchronously on exit to ensure data persistence
-    process.on('SIGINT', () => { saveSync(); process.exit(); });
-    process.on('SIGTERM', () => { saveSync(); process.exit(); });
+    process.on('SIGINT', () => {
+        saveSync();
+        process.exit();
+    });
+    process.on('SIGTERM', () => {
+        saveSync();
+        process.exit();
+    });
 
     // Request interceptor
     // Track both Anthropic (/v1/messages) and OpenAI compatible (/v1/chat/completions) endpoints
@@ -197,7 +203,7 @@ function setupRoutes(app) {
         // Sort keys to ensure chronological order
         const sortedKeys = Object.keys(history).sort();
         const sortedData = {};
-        sortedKeys.forEach(key => {
+        sortedKeys.forEach((key) => {
             sortedData[key] = history[key];
         });
         res.json(sortedData);
@@ -211,7 +217,7 @@ function setupRoutes(app) {
 function getHistory() {
     const sortedKeys = Object.keys(history).sort();
     const sortedData = {};
-    sortedKeys.forEach(key => {
+    sortedKeys.forEach((key) => {
         sortedData[key] = history[key];
     });
     return sortedData;

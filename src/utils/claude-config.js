@@ -31,11 +31,15 @@ export async function readClaudeConfig() {
         return JSON.parse(content);
     } catch (error) {
         if (error.code === 'ENOENT') {
-            logger.warn(`[ClaudeConfig] Config file not found at ${configPath}, returning empty default`);
+            logger.warn(
+                `[ClaudeConfig] Config file not found at ${configPath}, returning empty default`
+            );
             return { env: {} };
         }
         if (error instanceof SyntaxError) {
-            logger.error(`[ClaudeConfig] Invalid JSON in config at ${configPath}. Returning safe default.`);
+            logger.error(
+                `[ClaudeConfig] Invalid JSON in config at ${configPath}. Returning safe default.`
+            );
             return { env: {} };
         }
         logger.error(`[ClaudeConfig] Failed to read config at ${configPath}:`, error.message);
@@ -120,7 +124,7 @@ function deepMerge(target, source) {
     const output = { ...target };
 
     if (isObject(target) && isObject(source)) {
-        Object.keys(source).forEach(key => {
+        Object.keys(source).forEach((key) => {
             if (isObject(source[key])) {
                 if (!(key in target)) {
                     Object.assign(output, { [key]: source[key] });
@@ -137,7 +141,7 @@ function deepMerge(target, source) {
 }
 
 function isObject(item) {
-    return (item && typeof item === 'object' && !Array.isArray(item));
+    return item && typeof item === 'object' && !Array.isArray(item);
 }
 
 // ==========================================
@@ -176,7 +180,9 @@ export async function readPresets() {
             return DEFAULT_PRESETS;
         }
         if (error instanceof SyntaxError) {
-            logger.error(`[ClaudePresets] Invalid JSON in presets at ${presetsPath}. Returning defaults.`);
+            logger.error(
+                `[ClaudePresets] Invalid JSON in presets at ${presetsPath}. Returning defaults.`
+            );
             return DEFAULT_PRESETS;
         }
         logger.error(`[ClaudePresets] Failed to read presets at ${presetsPath}:`, error.message);
@@ -194,7 +200,7 @@ export async function savePreset(name, config) {
     const presetsPath = getPresetsPath();
     let presets = await readPresets();
 
-    const existingIndex = presets.findIndex(p => p.name === name);
+    const existingIndex = presets.findIndex((p) => p.name === name);
     const newPreset = { name, config: { ...config } };
 
     if (existingIndex >= 0) {
@@ -226,7 +232,7 @@ export async function deletePreset(name) {
     let presets = await readPresets();
 
     const originalLength = presets.length;
-    presets = presets.filter(p => p.name !== name);
+    presets = presets.filter((p) => p.name !== name);
 
     if (presets.length === originalLength) {
         logger.warn(`[ClaudePresets] Preset not found: ${name}`);

@@ -1,7 +1,7 @@
 /**
  * Test for Recursive Fallback Mechanism
- * 
- * Verifies chained fallback logic (Lite -> Flash -> Pro) 
+ *
+ * Verifies chained fallback logic (Lite -> Flash -> Pro)
  * by mocking upstream API responses.
  */
 
@@ -62,13 +62,13 @@ async function testRecursiveFallback() {
             selectAccount: () => ({ account: { email: 'test@example.com' }, waitMs: 0 }),
             getTokenForAccount: async () => 'fake-token',
             getProjectForAccount: async () => 'fake-project',
-            clearExpiredLimits: () => { },
+            clearExpiredLimits: () => {},
             isAllRateLimited: () => false,
-            notifyFailure: () => { },
-            notifySuccess: () => { },
+            notifyFailure: () => {},
+            notifySuccess: () => {},
             getHealthTracker: () => ({ getConsecutiveFailures: () => 0 }),
-            markRateLimited: () => { },
-            notifyRateLimit: () => { }
+            markRateLimited: () => {},
+            notifyRateLimit: () => {}
         };
 
         console.log('TEST 1: Verify Fallback Chain');
@@ -82,7 +82,8 @@ async function testRecursiveFallback() {
         console.log('  Triggering stream request...');
         const generator = sendMessageStream(request, mockAccountManager, true); // fallbackEnabled=true
 
-        for await (const chunk of generator) { // eslint-disable-line no-unused-vars
+        for await (const chunk of generator) {
+            // eslint-disable-line no-unused-vars
             // Consume stream
         }
 
@@ -90,7 +91,8 @@ async function testRecursiveFallback() {
         console.log(`  Sequence: ${fetchCalls.join(' -> ')}`);
 
         const expectedChain = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro'];
-        const passed = fetchCalls.length === 3 &&
+        const passed =
+            fetchCalls.length === 3 &&
             fetchCalls[0] === expectedChain[0] &&
             fetchCalls[1] === expectedChain[1] &&
             fetchCalls[2] === expectedChain[2];
@@ -118,7 +120,6 @@ async function testRecursiveFallback() {
         console.log('============================================================\n');
 
         return true;
-
     } catch (error) {
         console.error('\n[ERROR] Test failed:', error.message);
         console.error(error.stack);
@@ -127,10 +128,10 @@ async function testRecursiveFallback() {
 }
 
 testRecursiveFallback()
-    .then(success => {
+    .then((success) => {
         process.exit(success ? 0 : 1);
     })
-    .catch(error => {
+    .catch((error) => {
         console.error('Fatal error:', error);
         process.exit(1);
     });

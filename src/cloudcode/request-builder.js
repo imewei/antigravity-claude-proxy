@@ -50,7 +50,7 @@ export function buildCloudCodeRequest(anthropicRequest, projectId) {
         model: model,
         request: googleRequest,
         userAgent: 'antigravity',
-        requestType: 'agent',  // CLIProxyAPI v6.6.89 compatibility
+        requestType: 'agent', // CLIProxyAPI v6.6.89 compatibility
         requestId: 'agent-' + crypto.randomUUID()
     };
 
@@ -73,7 +73,7 @@ export function buildCloudCodeRequest(anthropicRequest, projectId) {
  */
 export function buildHeaders(token, model, accept = 'application/json') {
     const headers = {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
         ...ANTIGRAVITY_HEADERS
     };

@@ -43,7 +43,9 @@ function shouldSkipRetryDueToDedup(model) {
 
     const elapsed = Date.now() - lastTimestamp;
     if (elapsed < RATE_LIMIT_DEDUP_WINDOW_MS) {
-        logger.debug(`[CloudCode] Rate limit on ${model} within dedup window (${elapsed}ms ago), skipping retry`);
+        logger.debug(
+            `[CloudCode] Rate limit on ${model} within dedup window (${elapsed}ms ago), skipping retry`
+        );
         return true;
     }
     return false;
@@ -72,12 +74,14 @@ function clearRateLimitTimestamp(model) {
  */
 function isPermanentAuthFailure(errorText) {
     const lower = (errorText || '').toLowerCase();
-    return lower.includes('invalid_grant') ||
+    return (
+        lower.includes('invalid_grant') ||
         lower.includes('token revoked') ||
         lower.includes('token has been expired or revoked') ||
         lower.includes('token_revoked') ||
         lower.includes('invalid_client') ||
-        lower.includes('credentials are invalid');
+        lower.includes('credentials are invalid')
+    );
 }
 
 /**
@@ -87,11 +91,13 @@ function isPermanentAuthFailure(errorText) {
  */
 function isModelCapacityExhausted(errorText) {
     const lower = (errorText || '').toLowerCase();
-    return lower.includes('model_capacity_exhausted') ||
+    return (
+        lower.includes('model_capacity_exhausted') ||
         lower.includes('capacity_exhausted') ||
         lower.includes('model is currently overloaded') ||
         lower.includes('service temporarily unavailable') ||
-        lower.includes('no capacity available');
+        lower.includes('no capacity available')
+    );
 }
 
 // Periodically clean up stale dedup timestamps (every 60 seconds)
@@ -117,7 +123,12 @@ setInterval(() => {
  * @yields {Object} Anthropic-format SSE events (message_start, content_block_start, content_block_delta, etc.)
  * @throws {Error} If max retries exceeded or no accounts available
  */
-export async function* sendMessageStream(anthropicRequest, accountManager, fallbackEnabled = false, signal = null) {
+export async function* sendMessageStream(
+    anthropicRequest,
+    accountManager,
+    fallbackEnabled = false,
+    signal = null
+) {
     const model = anthropicRequest.model;
 
     // Retry loop with account failover
@@ -143,10 +154,17 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                     if (fallbackEnabled) {
                         const fallbackModel = getFallbackModel(model);
                         if (fallbackModel) {
-                            logger.warn(`[CloudCode] All accounts exhausted for ${model} (${formatDuration(minWaitMs)} wait). Attempting fallback to ${fallbackModel} (streaming)`);
+                            logger.warn(
+                                `[CloudCode] All accounts exhausted for ${model} (${formatDuration(minWaitMs)} wait). Attempting fallback to ${fallbackModel} (streaming)`
+                            );
                             const fallbackRequest = { ...anthropicRequest, model: fallbackModel };
                             // Pass fallbackEnabled=true (or inherit) to allow chaining
-                            yield* sendMessageStream(fallbackRequest, accountManager, fallbackEnabled, signal);
+                            yield* sendMessageStream(
+                                fallbackRequest,
+                                accountManager,
+                                fallbackEnabled,
+                                signal
+                            );
                             return;
                         }
                     }
@@ -157,7 +175,9 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
 
                 // Wait for shortest reset time
                 const accountCount = accountManager.getAccountCount();
-                logger.warn(`[CloudCode] All ${accountCount} account(s) rate-limited. Waiting ${formatDuration(minWaitMs)}...`);
+                logger.warn(
+                    `[CloudCode] All ${accountCount} account(s) rate-limited. Waiting ${formatDuration(minWaitMs)}...`
+                );
                 await sleep(minWaitMs + 500); // Add 500ms buffer
                 accountManager.clearExpiredLimits();
                 continue; // Retry the loop
@@ -179,7 +199,9 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
 
         // Safety: If no account and no wait time (shouldn't happen with fixed strategy, but good defense)
         if (!account) {
-            logger.warn('[CloudCode] No account selected and no wait time provided. Forcing 1s sleep to prevent loop.');
+            logger.warn(
+                '[CloudCode] No account selected and no wait time provided. Forcing 1s sleep to prevent loop.'
+            );
             await sleep(1000);
             continue;
         }
@@ -221,13 +243,20 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
 
                     if (!response.ok) {
                         const errorText = await response.text();
-                        logger.warn(`[CloudCode] Stream error at ${endpoint}: ${response.status} - ${errorText}`);
+                        logger.warn(
+                            `[CloudCode] Stream error at ${endpoint}: ${response.status} - ${errorText}`
+                        );
 
                         if (response.status === 401) {
                             // Gap 3: Check for permanent auth failures
                             if (isPermanentAuthFailure(errorText)) {
-                                logger.error(`[CloudCode] Permanent auth failure for ${account.email}: ${errorText.substring(0, 100)}`);
-                                accountManager.markInvalid(account.email, 'Token revoked - re-authentication required');
+                                logger.error(
+                                    `[CloudCode] Permanent auth failure for ${account.email}: ${errorText.substring(0, 100)}`
+                                );
+                                accountManager.markInvalid(
+                                    account.email,
+                                    'Token revoked - re-authentication required'
+                                );
                                 throw new Error(`AUTH_INVALID_PERMANENT: ${errorText}`);
                             }
 
@@ -246,26 +275,38 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                                 if (capacityRetryCount < MAX_CAPACITY_RETRIES) {
                                     capacityRetryCount++;
                                     const waitMs = resetMs || CAPACITY_RETRY_DELAY_MS;
-                                    logger.info(`[CloudCode] Model capacity exhausted, retry ${capacityRetryCount}/${MAX_CAPACITY_RETRIES} after ${formatDuration(waitMs)}...`);
+                                    logger.info(
+                                        `[CloudCode] Model capacity exhausted, retry ${capacityRetryCount}/${MAX_CAPACITY_RETRIES} after ${formatDuration(waitMs)}...`
+                                    );
                                     await sleep(waitMs);
                                     // Don't increment endpointIndex - retry same endpoint
                                     continue;
                                 }
                                 // Max capacity retries exceeded - treat as quota exhaustion
-                                logger.warn(`[CloudCode] Max capacity retries (${MAX_CAPACITY_RETRIES}) exceeded, switching account`);
+                                logger.warn(
+                                    `[CloudCode] Max capacity retries (${MAX_CAPACITY_RETRIES}) exceeded, switching account`
+                                );
                             }
 
                             // Gap 1: Check deduplication window to prevent thundering herd
                             if (shouldSkipRetryDueToDedup(model)) {
-                                logger.info(`[CloudCode] Skipping retry due to recent rate limit, switching account...`);
-                                accountManager.markRateLimited(account.email, resetMs || DEFAULT_COOLDOWN_MS, model);
+                                logger.info(
+                                    `[CloudCode] Skipping retry due to recent rate limit, switching account...`
+                                );
+                                accountManager.markRateLimited(
+                                    account.email,
+                                    resetMs || DEFAULT_COOLDOWN_MS,
+                                    model
+                                );
                                 throw new Error(`RATE_LIMITED_DEDUP: ${errorText}`);
                             }
 
                             // Decision: wait and retry OR switch account
                             if (resetMs && resetMs > DEFAULT_COOLDOWN_MS) {
                                 // Long-term quota exhaustion (> 10s) - switch to next account
-                                logger.info(`[CloudCode] Quota exhausted for ${account.email} (${formatDuration(resetMs)}), switching account...`);
+                                logger.info(
+                                    `[CloudCode] Quota exhausted for ${account.email} (${formatDuration(resetMs)}), switching account...`
+                                );
                                 accountManager.markRateLimited(account.email, resetMs, model);
                                 throw new Error(`QUOTA_EXHAUSTED: ${errorText}`);
                             } else {
@@ -275,7 +316,9 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                                 if (!retriedOnce) {
                                     retriedOnce = true;
                                     recordRateLimitTimestamp(model); // Gap 1: Record before retry
-                                    logger.info(`[CloudCode] Short rate limit (${formatDuration(waitMs)}), waiting and retrying...`);
+                                    logger.info(
+                                        `[CloudCode] Short rate limit (${formatDuration(waitMs)}), waiting and retrying...`
+                                    );
                                     await sleep(waitMs);
                                     // Don't increment endpointIndex - retry same endpoint
                                     continue;
@@ -293,7 +336,9 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                         if (response.status === 403 || response.status === 404) {
                             logger.warn(`[CloudCode] ${response.status} at ${endpoint}..`);
                         } else if (response.status >= 500) {
-                            logger.warn(`[CloudCode] ${response.status} stream error, waiting 1s before retry...`);
+                            logger.warn(
+                                `[CloudCode] ${response.status} stream error, waiting 1s before retry...`
+                            );
                             await sleep(1000);
                         }
 
@@ -304,7 +349,11 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                     // Stream the response with retry logic for empty responses
                     let currentResponse = response;
 
-                    for (let emptyRetries = 0; emptyRetries <= MAX_EMPTY_RESPONSE_RETRIES; emptyRetries++) {
+                    for (
+                        let emptyRetries = 0;
+                        emptyRetries <= MAX_EMPTY_RESPONSE_RETRIES;
+                        emptyRetries++
+                    ) {
                         try {
                             yield* streamSSEResponse(currentResponse, anthropicRequest.model);
                             logger.debug('[CloudCode] Stream completed');
@@ -320,14 +369,18 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
 
                             // Check if we have retries left
                             if (emptyRetries >= MAX_EMPTY_RESPONSE_RETRIES) {
-                                logger.error(`[CloudCode] Empty response after ${MAX_EMPTY_RESPONSE_RETRIES} retries`);
+                                logger.error(
+                                    `[CloudCode] Empty response after ${MAX_EMPTY_RESPONSE_RETRIES} retries`
+                                );
                                 yield* emitEmptyResponseFallback(anthropicRequest.model);
                                 return;
                             }
 
                             // Exponential backoff: 500ms, 1000ms, 2000ms
                             const backoffMs = 500 * Math.pow(2, emptyRetries);
-                            logger.warn(`[CloudCode] Empty response, retry ${emptyRetries + 1}/${MAX_EMPTY_RESPONSE_RETRIES} after ${backoffMs}ms...`);
+                            logger.warn(
+                                `[CloudCode] Empty response, retry ${emptyRetries + 1}/${MAX_EMPTY_RESPONSE_RETRIES} after ${backoffMs}ms...`
+                            );
                             await sleep(backoffMs);
 
                             // Refetch the response
@@ -348,24 +401,37 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                                 if (currentResponse.status === 429) {
                                     const resetMs = parseResetTime(currentResponse, retryErrorText);
                                     accountManager.markRateLimited(account.email, resetMs, model);
-                                    throw new Error(`429 RESOURCE_EXHAUSTED during retry: ${retryErrorText}`);
+                                    throw new Error(
+                                        `429 RESOURCE_EXHAUSTED during retry: ${retryErrorText}`
+                                    );
                                 }
 
                                 // Auth error - check for permanent failure
                                 if (currentResponse.status === 401) {
                                     if (isPermanentAuthFailure(retryErrorText)) {
-                                        logger.error(`[CloudCode] Permanent auth failure during retry for ${account.email}`);
-                                        accountManager.markInvalid(account.email, 'Token revoked - re-authentication required');
-                                        throw new Error(`AUTH_INVALID_PERMANENT: ${retryErrorText}`);
+                                        logger.error(
+                                            `[CloudCode] Permanent auth failure during retry for ${account.email}`
+                                        );
+                                        accountManager.markInvalid(
+                                            account.email,
+                                            'Token revoked - re-authentication required'
+                                        );
+                                        throw new Error(
+                                            `AUTH_INVALID_PERMANENT: ${retryErrorText}`
+                                        );
                                     }
                                     accountManager.clearTokenCache(account.email);
                                     accountManager.clearProjectCache(account.email);
-                                    throw new Error(`401 AUTH_INVALID during retry: ${retryErrorText}`);
+                                    throw new Error(
+                                        `401 AUTH_INVALID during retry: ${retryErrorText}`
+                                    );
                                 }
 
                                 // For 5xx errors, continue retrying
                                 if (currentResponse.status >= 500) {
-                                    logger.warn(`[CloudCode] Retry got ${currentResponse.status}, will retry...`);
+                                    logger.warn(
+                                        `[CloudCode] Retry got ${currentResponse.status}, will retry...`
+                                    );
                                     await sleep(1000);
                                     await sleep(1000);
                                     const nextRetryOptions = {
@@ -381,11 +447,12 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                                     }
                                 }
 
-                                throw new Error(`Empty response retry failed: ${currentResponse.status} - ${retryErrorText}`);
+                                throw new Error(
+                                    `Empty response retry failed: ${currentResponse.status} - ${retryErrorText}`
+                                );
                             }
                         }
                     }
-
                 } catch (endpointError) {
                     if (isRateLimitError(endpointError)) {
                         throw endpointError; // Re-throw to trigger account switch
@@ -408,7 +475,6 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                 }
                 throw lastError;
             }
-
         } catch (error) {
             if (isRateLimitError(error)) {
                 // Rate limited - already marked, notify strategy and continue to next account
@@ -418,20 +484,31 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
             }
             if (isAuthError(error)) {
                 // Auth invalid - already marked, continue to next account
-                logger.warn(`[CloudCode] Account ${account.email} has invalid credentials, trying next...`);
+                logger.warn(
+                    `[CloudCode] Account ${account.email} has invalid credentials, trying next...`
+                );
                 continue;
             }
             // Handle 5xx errors
-            if (error.message.includes('API error 5') || error.message.includes('500') || error.message.includes('503')) {
+            if (
+                error.message.includes('API error 5') ||
+                error.message.includes('500') ||
+                error.message.includes('503')
+            ) {
                 accountManager.notifyFailure(account, model);
 
                 // Gap 2: Check consecutive failures for extended cooldown
-                const consecutiveFailures = accountManager.getHealthTracker()?.getConsecutiveFailures(account.email) || 0;
+                const consecutiveFailures =
+                    accountManager.getHealthTracker()?.getConsecutiveFailures(account.email) || 0;
                 if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-                    logger.warn(`[CloudCode] Account ${account.email} has ${consecutiveFailures} consecutive failures, applying extended cooldown (${formatDuration(EXTENDED_COOLDOWN_MS)})`);
+                    logger.warn(
+                        `[CloudCode] Account ${account.email} has ${consecutiveFailures} consecutive failures, applying extended cooldown (${formatDuration(EXTENDED_COOLDOWN_MS)})`
+                    );
                     accountManager.markRateLimited(account.email, EXTENDED_COOLDOWN_MS, model);
                 } else {
-                    logger.warn(`[CloudCode] Account ${account.email} failed with 5xx stream error, trying next...`);
+                    logger.warn(
+                        `[CloudCode] Account ${account.email} failed with 5xx stream error, trying next...`
+                    );
                 }
                 continue;
             }
@@ -440,12 +517,17 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                 accountManager.notifyFailure(account, model);
 
                 // Gap 2: Check consecutive failures for extended cooldown
-                const consecutiveFailures = accountManager.getHealthTracker()?.getConsecutiveFailures(account.email) || 0;
+                const consecutiveFailures =
+                    accountManager.getHealthTracker()?.getConsecutiveFailures(account.email) || 0;
                 if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-                    logger.warn(`[CloudCode] Account ${account.email} has ${consecutiveFailures} consecutive network failures, applying extended cooldown (${formatDuration(EXTENDED_COOLDOWN_MS)})`);
+                    logger.warn(
+                        `[CloudCode] Account ${account.email} has ${consecutiveFailures} consecutive network failures, applying extended cooldown (${formatDuration(EXTENDED_COOLDOWN_MS)})`
+                    );
                     accountManager.markRateLimited(account.email, EXTENDED_COOLDOWN_MS, model);
                 } else {
-                    logger.warn(`[CloudCode] Network error for ${account.email} (stream), trying next account... (${error.message})`);
+                    logger.warn(
+                        `[CloudCode] Network error for ${account.email} (stream), trying next account... (${error.message})`
+                    );
                 }
                 await sleep(1000);
                 continue;
@@ -459,7 +541,9 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
     if (fallbackEnabled) {
         const fallbackModel = getFallbackModel(model);
         if (fallbackModel) {
-            logger.warn(`[CloudCode] All retries exhausted for ${model}. Attempting fallback to ${fallbackModel} (streaming)`);
+            logger.warn(
+                `[CloudCode] All retries exhausted for ${model}. Attempting fallback to ${fallbackModel} (streaming)`
+            );
             const fallbackRequest = { ...anthropicRequest, model: fallbackModel };
             // Pass fallbackEnabled=true (or inherit) to allow chaining
             yield* sendMessageStream(fallbackRequest, accountManager, fallbackEnabled, signal);

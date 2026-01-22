@@ -8,9 +8,9 @@
 
 // Default configuration (matches opencode-antigravity-auth)
 const DEFAULT_CONFIG = {
-    maxTokens: 50,        // Maximum token capacity
-    tokensPerMinute: 6,   // Regeneration rate
-    initialTokens: 50     // Starting tokens
+    maxTokens: 50, // Maximum token capacity
+    tokensPerMinute: 6, // Regeneration rate
+    initialTokens: 50 // Starting tokens
 };
 
 export class TokenBucketTracker {
@@ -40,10 +40,7 @@ export class TokenBucketTracker {
         const now = Date.now();
         const minutesElapsed = (now - bucket.lastUpdated) / (1000 * 60);
         const regenerated = minutesElapsed * this.#config.tokensPerMinute;
-        const currentTokens = Math.min(
-            this.#config.maxTokens,
-            bucket.tokens + regenerated
-        );
+        const currentTokens = Math.min(this.#config.maxTokens, bucket.tokens + regenerated);
 
         return currentTokens;
     }
@@ -81,10 +78,7 @@ export class TokenBucketTracker {
      */
     refund(email) {
         const currentTokens = this.getTokens(email);
-        const newTokens = Math.min(
-            this.#config.maxTokens,
-            currentTokens + 1
-        );
+        const newTokens = Math.min(this.#config.maxTokens, currentTokens + 1);
         this.#buckets.set(email, {
             tokens: newTokens,
             lastUpdated: Date.now()

@@ -27,6 +27,7 @@ A proxy server that exposes an **Anthropic-compatible API** backed by **Antigrav
 5. Converts responses back to **Anthropic format** with full thinking/streaming support
 
 ### Key Features
+
 - **Stability**: Built-in support for `AbortController`, ensuring upstream requests are cancelled immediately when you interrupt the client.
 - **Efficiency**: Graceful handling of client disconnects (EPIPE/ECONNRESET) prevents "ghost" requests and saves quota.
 - **Modern**: Fully modernized ES modules architecture using `node:` protocol imports.
@@ -58,7 +59,7 @@ git clone https://github.com/badri-s2001/antigravity-claude-proxy.git
 cd antigravity-claude-proxy
 
 # For production/deployment (omits dev tools):
-npm install --omit=dev  
+npm install --omit=dev
 npm start
 
 # For development (includes css tools):
@@ -157,16 +158,16 @@ Add this configuration:
 
 ```json
 {
-  "env": {
-    "ANTHROPIC_AUTH_TOKEN": "test",
-    "ANTHROPIC_BASE_URL": "http://localhost:8080",
-    "ANTHROPIC_MODEL": "claude-opus-4-5-thinking",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-5-thinking",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-5-thinking",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "gemini-2.5-flash-lite[1m]",
-    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-sonnet-4-5-thinking",
-    "ENABLE_EXPERIMENTAL_MCP_CLI": "true"
-  }
+    "env": {
+        "ANTHROPIC_AUTH_TOKEN": "test",
+        "ANTHROPIC_BASE_URL": "http://localhost:8080",
+        "ANTHROPIC_MODEL": "claude-opus-4-5-thinking",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-5-thinking",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-5-thinking",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "gemini-2.5-flash-lite[1m]",
+        "CLAUDE_CODE_SUBAGENT_MODEL": "claude-sonnet-4-5-thinking",
+        "ENABLE_EXPERIMENTAL_MCP_CLI": "true"
+    }
 }
 ```
 
@@ -176,16 +177,16 @@ Or to use Gemini models:
 
 ```json
 {
-  "env": {
-    "ANTHROPIC_AUTH_TOKEN": "test",
-    "ANTHROPIC_BASE_URL": "http://localhost:8080",
-    "ANTHROPIC_MODEL": "gemini-3-pro-high[1m]",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "gemini-3-pro-high[1m]",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "gemini-3-flash[1m]",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "gemini-2.5-flash-lite[1m]",
-    "CLAUDE_CODE_SUBAGENT_MODEL": "gemini-3-flash[1m]",
-    "ENABLE_EXPERIMENTAL_MCP_CLI": "true"
-  }
+    "env": {
+        "ANTHROPIC_AUTH_TOKEN": "test",
+        "ANTHROPIC_BASE_URL": "http://localhost:8080",
+        "ANTHROPIC_MODEL": "gemini-3-pro-high[1m]",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "gemini-3-pro-high[1m]",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "gemini-3-flash[1m]",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "gemini-2.5-flash-lite[1m]",
+        "CLAUDE_CODE_SUBAGENT_MODEL": "gemini-3-flash[1m]",
+        "ENABLE_EXPERIMENTAL_MCP_CLI": "true"
+    }
 }
 ```
 
@@ -289,11 +290,11 @@ When you add multiple accounts, the proxy intelligently distributes requests acr
 
 Choose a strategy based on your needs:
 
-| Strategy | Best For | Description |
-| --- | --- | --- |
-| **Hybrid** (Default) | Most users | Smart selection combining health score, token bucket rate limiting, and LRU freshness |
-| **Sticky** | Prompt caching | Stays on the same account to maximize cache hits, switches only when rate-limited |
-| **Round-Robin** | Even distribution | Cycles through accounts sequentially for balanced load |
+| Strategy             | Best For          | Description                                                                           |
+| -------------------- | ----------------- | ------------------------------------------------------------------------------------- |
+| **Hybrid** (Default) | Most users        | Smart selection combining health score, token bucket rate limiting, and LRU freshness |
+| **Sticky**           | Prompt caching    | Stays on the same account to maximize cache hits, switches only when rate-limited     |
+| **Round-Robin**      | Even distribution | Cycles through accounts sequentially for balanced load                                |
 
 **Configure via CLI:**
 
@@ -549,6 +550,7 @@ npm run dev:full
 ```
 
 **File Structure:**
+
 - `public/css/src/input.css` - Source CSS with Tailwind `@apply` directives (edit this)
 - `public/css/style.css` - Compiled & minified CSS (auto-generated, don't edit)
 - `tailwind.config.js` - Tailwind configuration
@@ -568,6 +570,7 @@ npm start
 #### Project Structure
 
 See [CLAUDE.md](./CLAUDE.md) for detailed architecture documentation, including:
+
 - Request flow and module organization
 - Frontend architecture (Alpine.js + Tailwind)
 - Service layer patterns (`ErrorHandler.withLoading`, `AccountActions`)

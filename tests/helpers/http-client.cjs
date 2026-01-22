@@ -18,81 +18,91 @@ const PORT = 8080;
 function streamRequest(body) {
     return new Promise((resolve, reject) => {
         const data = JSON.stringify(body);
-        const req = http.request({
-            host: BASE_URL,
-            port: PORT,
-            path: '/v1/messages',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': 'test',
-                'anthropic-version': '2023-06-01',
-                'anthropic-beta': 'interleaved-thinking-2025-05-14',
-                'Content-Length': Buffer.byteLength(data)
+        const req = http.request(
+            {
+                host: BASE_URL,
+                port: PORT,
+                path: '/v1/messages',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': 'test',
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-beta': 'interleaved-thinking-2025-05-14',
+                    'Content-Length': Buffer.byteLength(data)
+                }
+            },
+            (res) => {
+                const events = [];
+                let fullData = '';
+
+                res.on('data', (chunk) => {
+                    fullData += chunk.toString();
+                });
+
+                res.on('end', () => {
+                    // Parse SSE events
+                    const parts = fullData.split('\n\n').filter((e) => e.trim());
+                    for (const part of parts) {
+                        const lines = part.split('\n');
+                        const eventLine = lines.find((l) => l.startsWith('event:'));
+                        const dataLine = lines.find((l) => l.startsWith('data:'));
+                        if (eventLine && dataLine) {
+                            try {
+                                const eventType = eventLine.replace('event:', '').trim();
+                                const eventData = JSON.parse(dataLine.replace('data:', '').trim());
+                                events.push({ type: eventType, data: eventData });
+                            } catch {
+                                /* ignore */
+                            }
+                        }
+                    }
+
+                    // Build content from events
+                    const content = [];
+                    let currentBlock = null;
+
+                    for (const event of events) {
+                        if (event.type === 'content_block_start') {
+                            currentBlock = { ...event.data.content_block };
+                            if (currentBlock.type === 'thinking') {
+                                currentBlock.thinking = '';
+                                currentBlock.signature = '';
+                            }
+                            if (currentBlock.type === 'text') currentBlock.text = '';
+                        } else if (event.type === 'content_block_delta') {
+                            const delta = event.data.delta;
+                            if (delta.type === 'thinking_delta' && currentBlock) {
+                                currentBlock.thinking += delta.thinking || '';
+                            }
+                            if (delta.type === 'signature_delta' && currentBlock) {
+                                currentBlock.signature += delta.signature || '';
+                            }
+                            if (delta.type === 'text_delta' && currentBlock) {
+                                currentBlock.text += delta.text || '';
+                            }
+                            if (delta.type === 'input_json_delta' && currentBlock) {
+                                currentBlock.partial_json =
+                                    (currentBlock.partial_json || '') + delta.partial_json;
+                            }
+                        } else if (event.type === 'content_block_stop') {
+                            if (currentBlock?.type === 'tool_use' && currentBlock.partial_json) {
+                                try {
+                                    currentBlock.input = JSON.parse(currentBlock.partial_json);
+                                } catch {
+                                    /* ignore */
+                                }
+                                delete currentBlock.partial_json;
+                            }
+                            if (currentBlock) content.push(currentBlock);
+                            currentBlock = null;
+                        }
+                    }
+
+                    resolve({ content, events, statusCode: res.statusCode, raw: fullData });
+                });
             }
-        }, res => {
-            const events = [];
-            let fullData = '';
-
-            res.on('data', chunk => {
-                fullData += chunk.toString();
-            });
-
-            res.on('end', () => {
-                // Parse SSE events
-                const parts = fullData.split('\n\n').filter(e => e.trim());
-                for (const part of parts) {
-                    const lines = part.split('\n');
-                    const eventLine = lines.find(l => l.startsWith('event:'));
-                    const dataLine = lines.find(l => l.startsWith('data:'));
-                    if (eventLine && dataLine) {
-                        try {
-                            const eventType = eventLine.replace('event:', '').trim();
-                            const eventData = JSON.parse(dataLine.replace('data:', '').trim());
-                            events.push({ type: eventType, data: eventData });
-                        } catch { /* ignore */ }
-                    }
-                }
-
-                // Build content from events
-                const content = [];
-                let currentBlock = null;
-
-                for (const event of events) {
-                    if (event.type === 'content_block_start') {
-                        currentBlock = { ...event.data.content_block };
-                        if (currentBlock.type === 'thinking') {
-                            currentBlock.thinking = '';
-                            currentBlock.signature = '';
-                        }
-                        if (currentBlock.type === 'text') currentBlock.text = '';
-                    } else if (event.type === 'content_block_delta') {
-                        const delta = event.data.delta;
-                        if (delta.type === 'thinking_delta' && currentBlock) {
-                            currentBlock.thinking += delta.thinking || '';
-                        }
-                        if (delta.type === 'signature_delta' && currentBlock) {
-                            currentBlock.signature += delta.signature || '';
-                        }
-                        if (delta.type === 'text_delta' && currentBlock) {
-                            currentBlock.text += delta.text || '';
-                        }
-                        if (delta.type === 'input_json_delta' && currentBlock) {
-                            currentBlock.partial_json = (currentBlock.partial_json || '') + delta.partial_json;
-                        }
-                    } else if (event.type === 'content_block_stop') {
-                        if (currentBlock?.type === 'tool_use' && currentBlock.partial_json) {
-                            try { currentBlock.input = JSON.parse(currentBlock.partial_json); } catch { /* ignore */ }
-                            delete currentBlock.partial_json;
-                        }
-                        if (currentBlock) content.push(currentBlock);
-                        currentBlock = null;
-                    }
-                }
-
-                resolve({ content, events, statusCode: res.statusCode, raw: fullData });
-            });
-        });
+        );
         req.on('error', reject);
         req.write(data);
         req.end();
@@ -107,30 +117,37 @@ function streamRequest(body) {
 function makeRequest(body) {
     return new Promise((resolve, reject) => {
         const data = JSON.stringify(body);
-        const req = http.request({
-            host: BASE_URL,
-            port: PORT,
-            path: '/v1/messages',
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': 'test',
-                'anthropic-version': '2023-06-01',
-                'anthropic-beta': 'interleaved-thinking-2025-05-14',
-                'Content-Length': Buffer.byteLength(data)
-            }
-        }, res => {
-            let fullData = '';
-            res.on('data', chunk => fullData += chunk.toString());
-            res.on('end', () => {
-                try {
-                    const parsed = JSON.parse(fullData);
-                    resolve({ ...parsed, statusCode: res.statusCode });
-                } catch (e) {
-                    reject(new Error(`Parse error: ${e.message}\nRaw: ${fullData.substring(0, 500)}`));
+        const req = http.request(
+            {
+                host: BASE_URL,
+                port: PORT,
+                path: '/v1/messages',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': 'test',
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-beta': 'interleaved-thinking-2025-05-14',
+                    'Content-Length': Buffer.byteLength(data)
                 }
-            });
-        });
+            },
+            (res) => {
+                let fullData = '';
+                res.on('data', (chunk) => (fullData += chunk.toString()));
+                res.on('end', () => {
+                    try {
+                        const parsed = JSON.parse(fullData);
+                        resolve({ ...parsed, statusCode: res.statusCode });
+                    } catch (e) {
+                        reject(
+                            new Error(
+                                `Parse error: ${e.message}\nRaw: ${fullData.substring(0, 500)}`
+                            )
+                        );
+                    }
+                });
+            }
+        );
         req.on('error', reject);
         req.write(data);
         req.end();
@@ -143,15 +160,17 @@ function makeRequest(body) {
  * @returns {Object} - Analysis results
  */
 function analyzeContent(content) {
-    const thinking = content.filter(b => b.type === 'thinking');
-    const toolUse = content.filter(b => b.type === 'tool_use');
-    const text = content.filter(b => b.type === 'text');
+    const thinking = content.filter((b) => b.type === 'thinking');
+    const toolUse = content.filter((b) => b.type === 'tool_use');
+    const text = content.filter((b) => b.type === 'text');
 
     // Check for signatures in thinking blocks (Claude style)
-    const thinkingHasSignature = thinking.some(t => t.signature && t.signature.length >= 50);
+    const thinkingHasSignature = thinking.some((t) => t.signature && t.signature.length >= 50);
 
     // Check for signatures in tool_use blocks (Gemini 3+ style)
-    const toolUseHasSignature = toolUse.some(t => t.thoughtSignature && t.thoughtSignature.length >= 50);
+    const toolUseHasSignature = toolUse.some(
+        (t) => t.thoughtSignature && t.thoughtSignature.length >= 50
+    );
 
     return {
         thinking,
@@ -174,16 +193,16 @@ function analyzeContent(content) {
  */
 function analyzeEvents(events) {
     return {
-        messageStart: events.filter(e => e.type === 'message_start').length,
-        blockStart: events.filter(e => e.type === 'content_block_start').length,
-        blockDelta: events.filter(e => e.type === 'content_block_delta').length,
-        blockStop: events.filter(e => e.type === 'content_block_stop').length,
-        messageDelta: events.filter(e => e.type === 'message_delta').length,
-        messageStop: events.filter(e => e.type === 'message_stop').length,
-        thinkingDeltas: events.filter(e => e.data?.delta?.type === 'thinking_delta').length,
-        signatureDeltas: events.filter(e => e.data?.delta?.type === 'signature_delta').length,
-        textDeltas: events.filter(e => e.data?.delta?.type === 'text_delta').length,
-        inputJsonDeltas: events.filter(e => e.data?.delta?.type === 'input_json_delta').length
+        messageStart: events.filter((e) => e.type === 'message_start').length,
+        blockStart: events.filter((e) => e.type === 'content_block_start').length,
+        blockDelta: events.filter((e) => e.type === 'content_block_delta').length,
+        blockStop: events.filter((e) => e.type === 'content_block_stop').length,
+        messageDelta: events.filter((e) => e.type === 'message_delta').length,
+        messageStop: events.filter((e) => e.type === 'message_stop').length,
+        thinkingDeltas: events.filter((e) => e.data?.delta?.type === 'thinking_delta').length,
+        signatureDeltas: events.filter((e) => e.data?.delta?.type === 'signature_delta').length,
+        textDeltas: events.filter((e) => e.data?.delta?.type === 'text_delta').length,
+        inputJsonDeltas: events.filter((e) => e.data?.delta?.type === 'input_json_delta').length
     };
 }
 
@@ -201,7 +220,7 @@ function extractUsage(events) {
     };
 
     // Get usage from message_start
-    const messageStart = events.find(e => e.type === 'message_start');
+    const messageStart = events.find((e) => e.type === 'message_start');
     if (messageStart?.data?.message?.usage) {
         const startUsage = messageStart.data.message.usage;
         usage.input_tokens = startUsage.input_tokens || 0;
@@ -210,7 +229,7 @@ function extractUsage(events) {
     }
 
     // Get output tokens from message_delta
-    const messageDelta = events.find(e => e.type === 'message_delta');
+    const messageDelta = events.find((e) => e.type === 'message_delta');
     if (messageDelta?.data?.usage) {
         const deltaUsage = messageDelta.data.usage;
         usage.output_tokens = deltaUsage.output_tokens || 0;

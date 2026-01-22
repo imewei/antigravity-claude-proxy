@@ -6,10 +6,7 @@
  * so this approach doesn't require any manual intervention.
  */
 
-import {
-    TOKEN_REFRESH_INTERVAL_MS,
-    ANTIGRAVITY_AUTH_PORT
-} from '../constants.js';
+import { TOKEN_REFRESH_INTERVAL_MS, ANTIGRAVITY_AUTH_PORT } from '../constants.js';
 import { getAuthStatus } from './database.js';
 import { logger } from '../utils/logger.js';
 
@@ -41,7 +38,7 @@ async function extractChatParams() {
         if (error.code === 'ECONNREFUSED') {
             throw new Error(
                 `Cannot connect to Antigravity on port ${ANTIGRAVITY_AUTH_PORT}. ` +
-                'Make sure Antigravity is running.'
+                    'Make sure Antigravity is running.'
             );
         }
         throw error;
@@ -70,13 +67,14 @@ async function getTokenData() {
             logger.warn('[Token] Got token from HTML page (may be stale)');
             return pageData;
         }
-    } catch (err) { // Keep err here as it is used in the message
+    } catch (err) {
+        // Keep err here as it is used in the message
         logger.warn(`[Token] HTML page extraction failed: ${err.message}`);
     }
 
     throw new Error(
         'Could not extract token from Antigravity. ' +
-        'Make sure Antigravity is running and you are logged in.'
+            'Make sure Antigravity is running and you are logged in.'
     );
 }
 

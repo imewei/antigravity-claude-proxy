@@ -26,7 +26,9 @@ for (let i = 0; i < args.length; i++) {
 }
 // Validate strategy
 if (strategyOverride && !STRATEGY_NAMES.includes(strategyOverride.toLowerCase())) {
-    logger.warn(`[Startup] Invalid strategy "${strategyOverride}". Valid options: ${STRATEGY_NAMES.join(', ')}. Using default.`);
+    logger.warn(
+        `[Startup] Invalid strategy "${strategyOverride}". Valid options: ${STRATEGY_NAMES.join(', ')}. Using default.`
+    );
     strategyOverride = null;
 }
 
@@ -56,7 +58,7 @@ async function main() {
     proxyServer.setup(isFallbackEnabled);
 
     // Initialize account manager (async, starts in background)
-    proxyServer.initialize(strategyOverride).catch(err => {
+    proxyServer.initialize(strategyOverride).catch((err) => {
         logger.error('[Startup] Failed to initialize account manager:', err);
     });
 
@@ -138,7 +140,7 @@ ${border}    ${align4(`export ANTHROPIC_BASE_URL=http://localhost:${PORT}`)}${bo
     }
 }
 
-main().catch(err => {
+main().catch((err) => {
     logger.error('Fatal error starting server:', err);
     process.exit(1);
 });

@@ -13,32 +13,32 @@ const DEFAULT_CONFIG = {
     retryBaseMs: 1000,
     retryMaxMs: 30000,
     persistTokenCache: false,
-    defaultCooldownMs: 10000,  // 10 seconds
+    defaultCooldownMs: 10000, // 10 seconds
     maxWaitBeforeErrorMs: 120000, // 2 minutes
     maxAccounts: 10, // Maximum number of accounts allowed
     modelMapping: {},
     // Account selection strategy configuration
     accountSelection: {
-        strategy: 'hybrid',           // 'sticky' | 'round-robin' | 'hybrid'
+        strategy: 'hybrid', // 'sticky' | 'round-robin' | 'hybrid'
         // Hybrid strategy tuning (optional - sensible defaults)
         healthScore: {
-            initial: 70,              // Starting score for new accounts
-            successReward: 1,         // Points on successful request
-            rateLimitPenalty: -10,    // Points on rate limit
-            failurePenalty: -20,      // Points on other failures
-            recoveryPerHour: 2,       // Passive recovery rate
-            minUsable: 50,            // Minimum score to be selected
-            maxScore: 100             // Maximum score cap
+            initial: 70, // Starting score for new accounts
+            successReward: 1, // Points on successful request
+            rateLimitPenalty: -10, // Points on rate limit
+            failurePenalty: -20, // Points on other failures
+            recoveryPerHour: 2, // Passive recovery rate
+            minUsable: 50, // Minimum score to be selected
+            maxScore: 100 // Maximum score cap
         },
         tokenBucket: {
-            maxTokens: 50,            // Maximum token capacity
-            tokensPerMinute: 6,       // Regeneration rate
-            initialTokens: 50         // Starting tokens
+            maxTokens: 50, // Maximum token capacity
+            tokensPerMinute: 6, // Regeneration rate
+            initialTokens: 50 // Starting tokens
         },
         quota: {
-            lowThreshold: 0.10,       // 10% - reduce score
-            criticalThreshold: 0.05,  // 5% - exclude from candidates
-            staleMs: 300000           // 5 min - max age of quota data to trust
+            lowThreshold: 0.1, // 10% - reduce score
+            criticalThreshold: 0.05, // 5% - exclude from candidates
+            staleMs: 300000 // 5 min - max age of quota data to trust
         }
     }
 };
@@ -83,7 +83,6 @@ function loadConfig() {
         if (process.env.API_KEY) config.apiKey = process.env.API_KEY;
         if (process.env.WEBUI_PASSWORD) config.webuiPassword = process.env.WEBUI_PASSWORD;
         if (process.env.DEBUG === 'true') config.debug = true;
-
     } catch (error) {
         logger.error('[Config] Error loading config:', error);
     }

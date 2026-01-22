@@ -61,7 +61,9 @@ export class StickyStrategy extends BaseStrategy {
                 onSave
             );
             if (nextAccount) {
-                logger.info(`[StickyStrategy] Switched to new account (failover): ${nextAccount.email}`);
+                logger.info(
+                    `[StickyStrategy] Switched to new account (failover): ${nextAccount.email}`
+                );
                 return { account: nextAccount, index: nextIndex, waitMs: 0 };
             }
         }
@@ -69,7 +71,9 @@ export class StickyStrategy extends BaseStrategy {
         // No other accounts available - check if we should wait for current
         const waitInfo = this.#shouldWaitForAccount(currentAccount, modelId);
         if (waitInfo.shouldWait) {
-            logger.info(`[StickyStrategy] Waiting ${formatDuration(waitInfo.waitMs)} for sticky account: ${currentAccount.email}`);
+            logger.info(
+                `[StickyStrategy] Waiting ${formatDuration(waitInfo.waitMs)} for sticky account: ${currentAccount.email}`
+            );
             return { account: null, index, waitMs: waitInfo.waitMs };
         }
 
@@ -99,7 +103,9 @@ export class StickyStrategy extends BaseStrategy {
 
                 const position = idx + 1;
                 const total = accounts.length;
-                logger.info(`[StickyStrategy] Using account: ${account.email} (${position}/${total})`);
+                logger.info(
+                    `[StickyStrategy] Using account: ${account.email} (${position}/${total})`
+                );
 
                 return { account, index: idx };
             }

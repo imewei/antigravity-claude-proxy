@@ -77,7 +77,7 @@ export async function parseThinkingSSEResponse(response, originalModel) {
                 for (const part of parts) {
                     if (part.thought === true) {
                         flushText();
-                        accumulatedThinkingText += (part.text || '');
+                        accumulatedThinkingText += part.text || '';
                         if (part.thoughtSignature) {
                             accumulatedThinkingSignature = part.thoughtSignature;
                         }
@@ -97,7 +97,12 @@ export async function parseThinkingSSEResponse(response, originalModel) {
                     }
                 }
             } catch (e) {
-                logger.debug('[CloudCode] SSE parse warning:', e.message, 'Raw:', jsonText.slice(0, 100));
+                logger.debug(
+                    '[CloudCode] SSE parse warning:',
+                    e.message,
+                    'Raw:',
+                    jsonText.slice(0, 100)
+                );
             }
         }
     }
@@ -110,11 +115,22 @@ export async function parseThinkingSSEResponse(response, originalModel) {
         usageMetadata
     };
 
-    const partTypes = finalParts.map(p => p.thought ? 'thought' : (p.functionCall ? 'functionCall' : (p.inlineData ? 'inlineData' : 'text')));
+    const partTypes = finalParts.map((p) =>
+        p.thought
+            ? 'thought'
+            : p.functionCall
+              ? 'functionCall'
+              : p.inlineData
+                ? 'inlineData'
+                : 'text'
+    );
     logger.debug('[CloudCode] Response received (SSE), part types:', partTypes);
-    if (finalParts.some(p => p.thought)) {
-        const thinkingPart = finalParts.find(p => p.thought);
-        logger.debug('[CloudCode] Thinking signature length:', thinkingPart?.thoughtSignature?.length || 0);
+    if (finalParts.some((p) => p.thought)) {
+        const thinkingPart = finalParts.find((p) => p.thought);
+        logger.debug(
+            '[CloudCode] Thinking signature length:',
+            thinkingPart?.thoughtSignature?.length || 0
+        );
     }
 
     return convertGoogleToAnthropic(accumulatedResponse, originalModel);

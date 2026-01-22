@@ -29,18 +29,24 @@ export function createHealthRouter({ accountManager, ensureInitialized }) {
             const accountDetails = await Promise.allSettled(
                 allAccounts.map(async (account) => {
                     // Check model-specific rate limits
-                    const activeModelLimits = Object.entries(account.modelRateLimits || {})
-                        .filter(([_, limit]) => limit.isRateLimited && limit.resetTime > Date.now());
+                    const activeModelLimits = Object.entries(account.modelRateLimits || {}).filter(
+                        ([_, limit]) => limit.isRateLimited && limit.resetTime > Date.now()
+                    );
                     const isRateLimited = activeModelLimits.length > 0;
-                    const soonestReset = activeModelLimits.length > 0
-                        ? Math.min(...activeModelLimits.map(([_, l]) => l.resetTime))
-                        : null;
+                    const soonestReset =
+                        activeModelLimits.length > 0
+                            ? Math.min(...activeModelLimits.map(([_, l]) => l.resetTime))
+                            : null;
 
                     const baseInfo = {
                         email: account.email,
-                        lastUsed: account.lastUsed ? new Date(account.lastUsed).toISOString() : null,
+                        lastUsed: account.lastUsed
+                            ? new Date(account.lastUsed).toISOString()
+                            : null,
                         modelRateLimits: account.modelRateLimits || {},
-                        rateLimitCooldownRemaining: soonestReset ? Math.max(0, soonestReset - Date.now()) : 0
+                        rateLimitCooldownRemaining: soonestReset
+                            ? Math.max(0, soonestReset - Date.now())
+                            : 0
                     };
 
                     // Skip invalid accounts for quota check
@@ -62,7 +68,10 @@ export function createHealthRouter({ accountManager, ensureInitialized }) {
                         const formattedQuotas = {};
                         for (const [modelId, info] of Object.entries(quotas)) {
                             formattedQuotas[modelId] = {
-                                remaining: info.remainingFraction !== null ? `${Math.round(info.remainingFraction * 100)}%` : 'N/A',
+                                remaining:
+                                    info.remainingFraction !== null
+                                        ? `${Math.round(info.remainingFraction * 100)}%`
+                                        : 'N/A',
                                 remainingFraction: info.remainingFraction,
                                 resetTime: info.resetTime || null
                             };
@@ -112,7 +121,6 @@ export function createHealthRouter({ accountManager, ensureInitialized }) {
                 },
                 accounts: detailedAccounts
             });
-
         } catch (error) {
             logger.error('[API] Health check failed:', error);
             res.status(503).json({

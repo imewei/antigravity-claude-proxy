@@ -1,65 +1,65 @@
 name: CI
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
 
 permissions:
-  contents: read
+    contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
+    lint:
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: npm ci
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'npm'
 
-      - name: Lint
-        run: npm run lint
+            - name: Install dependencies
+              run: npm ci
 
-      - name: Check Formatting
-        run: npm run format:check
+            - name: Lint
+              run: npm run lint
 
-  test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      matrix:
-        node-version: [18, 20, 22]
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+            - name: Check Formatting
+              run: npm run format:check
 
-      - name: Install dependencies
-        run: npm ci
+    test:
+        runs-on: ubuntu-latest
+        timeout-minutes: 15
+        strategy:
+            matrix:
+                node-version: [18, 20, 22]
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Run Tests
-        # Start server in background if tests require it, but here we just run npm test
-        # Note: npm test expects server running for integration tests? 
-        # Checking package.json: "test": "node tests/run-all.cjs"
-        # README says: "Tests require the server to be running"
-        # We need to start the server in detached mode before testing.
-        run: |
-          npm start &
-          npx wait-on http://localhost:8080 -t 30000
-          npm test
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run Tests
+              # Start server in background if tests require it, but here we just run npm test
+              # Note: npm test expects server running for integration tests?
+              # Checking package.json: "test": "node tests/run-all.cjs"
+              # README says: "Tests require the server to be running"
+              # We need to start the server in detached mode before testing.
+              run: |
+                  npm start &
+                  npx wait-on http://localhost:8080 -t 30000
+                  npm test

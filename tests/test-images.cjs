@@ -9,7 +9,11 @@
 const fs = require('fs');
 const path = require('path');
 const { streamRequest, analyzeContent } = require('./helpers/http-client.cjs');
-const { getTestModels, getModelConfig, familySupportsThinking } = require('./helpers/test-models.cjs');
+const {
+    getTestModels,
+    getModelConfig,
+    familySupportsThinking
+} = require('./helpers/test-models.cjs');
 
 // Load test image from disk
 const TEST_IMAGE_PATH = path.join(__dirname, 'utils', 'test_image.jpeg');
@@ -37,23 +41,25 @@ async function runTestsForModel(family, model) {
         max_tokens: modelConfig.max_tokens,
         stream: true,
         thinking: modelConfig.thinking,
-        messages: [{
-            role: 'user',
-            content: [
-                {
-                    type: 'image',
-                    source: {
-                        type: 'base64',
-                        media_type: 'image/jpeg',
-                        data: TEST_IMAGE_BASE64
+        messages: [
+            {
+                role: 'user',
+                content: [
+                    {
+                        type: 'image',
+                        source: {
+                            type: 'base64',
+                            media_type: 'image/jpeg',
+                            data: TEST_IMAGE_BASE64
+                        }
+                    },
+                    {
+                        type: 'text',
+                        text: 'What do you see in this image? Describe it briefly.'
                     }
-                },
-                {
-                    type: 'text',
-                    text: 'What do you see in this image? Describe it briefly.'
-                }
-            ]
-        }]
+                ]
+            }
+        ]
     });
 
     if (result1.error) {
@@ -74,9 +80,7 @@ async function runTestsForModel(family, model) {
         }
 
         // For thinking models, expect thinking + text. For others, just text.
-        const passed = expectThinking
-            ? (content.hasThinking && content.hasText)
-            : content.hasText;
+        const passed = expectThinking ? content.hasThinking && content.hasText : content.hasText;
         results.push({ name: 'Single image processing', passed });
         if (!passed) allPassed = false;
     }
@@ -97,10 +101,12 @@ async function runTestsForModel(family, model) {
             },
             {
                 role: 'assistant',
-                content: [{
-                    type: 'text',
-                    text: 'Sure, please share the image and I\'ll help analyze it.'
-                }]
+                content: [
+                    {
+                        type: 'text',
+                        text: "Sure, please share the image and I'll help analyze it."
+                    }
+                ]
             },
             {
                 role: 'user',
@@ -152,7 +158,9 @@ async function runTestsForModel(family, model) {
     }
 
     console.log('\n' + '='.repeat(60));
-    console.log(`[${family.toUpperCase()}] ${allPassed ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`);
+    console.log(
+        `[${family.toUpperCase()}] ${allPassed ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`
+    );
     console.log('='.repeat(60));
 
     return allPassed;
@@ -171,13 +179,15 @@ async function runTests() {
     console.log('\n' + '='.repeat(60));
     console.log('FINAL RESULT');
     console.log('='.repeat(60));
-    console.log(`Overall: ${allPassed ? 'ALL MODEL FAMILIES PASSED' : 'SOME MODEL FAMILIES FAILED'}`);
+    console.log(
+        `Overall: ${allPassed ? 'ALL MODEL FAMILIES PASSED' : 'SOME MODEL FAMILIES FAILED'}`
+    );
     console.log('='.repeat(60));
 
     process.exit(allPassed ? 0 : 1);
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
     console.error('Test failed with error:', err);
     process.exit(1);
 });

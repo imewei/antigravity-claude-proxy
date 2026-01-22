@@ -10,7 +10,7 @@ window.AccountActions = window.AccountActions || {};
  * @param {string} email - 账号邮箱
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
-window.AccountActions.refreshAccount = async function(email) {
+window.AccountActions.refreshAccount = async function (email) {
     const store = Alpine.store('global');
 
     try {
@@ -26,7 +26,10 @@ window.AccountActions.refreshAccount = async function(email) {
 
         const data = await response.json();
         if (data.status !== 'ok') {
-            return { success: false, error: data.error || Alpine.store('global').t('refreshFailed') };
+            return {
+                success: false,
+                error: data.error || Alpine.store('global').t('refreshFailed')
+            };
         }
 
         // 触发数据刷新
@@ -44,12 +47,12 @@ window.AccountActions.refreshAccount = async function(email) {
  * @param {boolean} enabled - 目标状态（true=启用, false=禁用）
  * @returns {Promise<{success: boolean, rolledBack?: boolean, data?: object, error?: string}>}
  */
-window.AccountActions.toggleAccount = async function(email, enabled) {
+window.AccountActions.toggleAccount = async function (email, enabled) {
     const store = Alpine.store('global');
     const dataStore = Alpine.store('data');
 
     // 乐观更新：立即修改 UI
-    const account = dataStore.accounts.find(a => a.email === email);
+    const account = dataStore.accounts.find((a) => a.email === email);
     const previousState = account ? account.enabled : !enabled;
 
     if (account) {
@@ -79,7 +82,6 @@ window.AccountActions.toggleAccount = async function(email, enabled) {
         // 确认服务器状态
         await dataStore.fetchData();
         return { success: true, data };
-
     } catch (error) {
         // 错误回滚：恢复原状态
         if (account) {
@@ -95,7 +97,7 @@ window.AccountActions.toggleAccount = async function(email, enabled) {
  * @param {string} email - 账号邮箱
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
-window.AccountActions.deleteAccount = async function(email) {
+window.AccountActions.deleteAccount = async function (email) {
     const store = Alpine.store('global');
 
     try {
@@ -111,13 +113,15 @@ window.AccountActions.deleteAccount = async function(email) {
 
         const data = await response.json();
         if (data.status !== 'ok') {
-            return { success: false, error: data.error || Alpine.store('global').t('deleteFailed') };
+            return {
+                success: false,
+                error: data.error || Alpine.store('global').t('deleteFailed')
+            };
         }
 
         // 触发数据刷新
         await Alpine.store('data').fetchData();
         return { success: true, data };
-
     } catch (error) {
         return { success: false, error: error.message };
     }
@@ -129,7 +133,7 @@ window.AccountActions.deleteAccount = async function(email) {
  * @param {string} email - 账号邮箱
  * @returns {Promise<{success: boolean, url?: string, error?: string}>}
  */
-window.AccountActions.getFixAccountUrl = async function(email) {
+window.AccountActions.getFixAccountUrl = async function (email) {
     const store = Alpine.store('global');
 
     try {
@@ -146,11 +150,13 @@ window.AccountActions.getFixAccountUrl = async function(email) {
 
         const data = await response.json();
         if (data.status !== 'ok') {
-            return { success: false, error: data.error || Alpine.store('global').t('authUrlFailed') };
+            return {
+                success: false,
+                error: data.error || Alpine.store('global').t('authUrlFailed')
+            };
         }
 
         return { success: true, url: data.url };
-
     } catch (error) {
         return { success: false, error: error.message };
     }
@@ -160,7 +166,7 @@ window.AccountActions.getFixAccountUrl = async function(email) {
  * 从磁盘重新加载所有账号配置
  * @returns {Promise<{success: boolean, data?: object, error?: string}>}
  */
-window.AccountActions.reloadAccounts = async function() {
+window.AccountActions.reloadAccounts = async function () {
     const store = Alpine.store('global');
 
     try {
@@ -176,13 +182,15 @@ window.AccountActions.reloadAccounts = async function() {
 
         const data = await response.json();
         if (data.status !== 'ok') {
-            return { success: false, error: data.error || Alpine.store('global').t('reloadFailed') };
+            return {
+                success: false,
+                error: data.error || Alpine.store('global').t('reloadFailed')
+            };
         }
 
         // 触发数据刷新
         await Alpine.store('data').fetchData();
         return { success: true, data };
-
     } catch (error) {
         return { success: false, error: error.message };
     }

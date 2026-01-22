@@ -3,11 +3,7 @@
  * Converts Anthropic Messages API requests to Google Generative AI format
  */
 
-import {
-    GEMINI_MAX_OUTPUT_TOKENS,
-    getModelFamily,
-    isThinkingModel
-} from '../constants.js';
+import { GEMINI_MAX_OUTPUT_TOKENS, getModelFamily, isThinkingModel } from '../constants.js';
 import { convertContentToParts, convertRole } from './content-converter.js';
 import { sanitizeSchema, cleanSchema } from './schema-sanitizer.js';
 import {
@@ -32,7 +28,17 @@ import { logger } from '../utils/logger.js';
  * @returns {Object} Request body for Cloud Code API
  */
 export function convertAnthropicToGoogle(anthropicRequest) {
-    const { messages, system, max_tokens, temperature, top_p, top_k, stop_sequences, tools, thinking } = anthropicRequest;
+    const {
+        messages,
+        system,
+        max_tokens,
+        temperature,
+        top_p,
+        top_k,
+        stop_sequences,
+        tools,
+        thinking
+    } = anthropicRequest;
     const modelName = anthropicRequest.model || '';
     const modelFamily = getModelFamily(modelName);
     const isClaudeModel = modelFamily === 'claude';
@@ -53,8 +59,8 @@ export function convertAnthropicToGoogle(anthropicRequest) {
             // Filter for text blocks as system prompts are usually text
             // Anthropic supports text blocks in system prompts
             systemParts = system
-                .filter(block => block.type === 'text')
-                .map(block => ({ text: block.text }));
+                .filter((block) => block.type === 'text')
+                .map((block) => ({ text: block.text }));
         }
 
         if (systemParts.length > 0) {
@@ -66,11 +72,15 @@ export function convertAnthropicToGoogle(anthropicRequest) {
 
     // Add interleaved thinking hint for Claude thinking models with tools
     if (isClaudeModel && isThinking && tools && tools.length > 0) {
-        const hint = 'Interleaved thinking is enabled. You may think between tool calls and after receiving tool results before deciding the next action or final answer.';
+        const hint =
+            'Interleaved thinking is enabled. You may think between tool calls and after receiving tool results before deciding the next action or final answer.';
         if (!googleRequest.systemInstruction) {
             googleRequest.systemInstruction = { parts: [{ text: hint }] };
         } else {
-            const lastPart = googleRequest.systemInstruction.parts[googleRequest.systemInstruction.parts.length - 1];
+            const lastPart =
+                googleRequest.systemInstruction.parts[
+                    googleRequest.systemInstruction.parts.length - 1
+                ];
             if (lastPart && lastPart.text) {
                 lastPart.text = `${lastPart.text}\n\n${hint}`;
             } else {
@@ -117,7 +127,9 @@ export function convertAnthropicToGoogle(anthropicRequest) {
         if (parts.length === 0) {
             // Use '.' instead of '' because claude models reject empty text parts.
             // A single period is invisible in practice but satisfies the API requirement.
-            logger.warn('[RequestConverter] WARNING: Empty parts array after filtering, adding placeholder');
+            logger.warn(
+                '[RequestConverter] WARNING: Empty parts array after filtering, adding placeholder'
+            );
             parts.push({ text: '.' });
         }
 
@@ -162,7 +174,9 @@ export function convertAnthropicToGoogle(anthropicRequest) {
             const thinkingBudget = thinking?.budget_tokens;
             if (thinkingBudget) {
                 thinkingConfig.thinking_budget = thinkingBudget;
-                logger.debug(`[RequestConverter] Claude thinking enabled with budget: ${thinkingBudget}`);
+                logger.debug(
+                    `[RequestConverter] Claude thinking enabled with budget: ${thinkingBudget}`
+                );
 
                 // Validate max_tokens > thinking_budget as required by the API
                 const currentMaxTokens = googleRequest.generationConfig.maxOutputTokens;
@@ -170,7 +184,9 @@ export function convertAnthropicToGoogle(anthropicRequest) {
                     // Bump max_tokens to allow for some response content
                     // Default to budget + 8192 (standard output buffer)
                     const adjustedMaxTokens = thinkingBudget + 8192;
-                    logger.warn(`[RequestConverter] max_tokens (${currentMaxTokens}) <= thinking_budget (${thinkingBudget}). Adjusting to ${adjustedMaxTokens} to satisfy API requirements`);
+                    logger.warn(
+                        `[RequestConverter] max_tokens (${currentMaxTokens}) <= thinking_budget (${thinkingBudget}). Adjusting to ${adjustedMaxTokens} to satisfy API requirements`
+                    );
                     googleRequest.generationConfig.maxOutputTokens = adjustedMaxTokens;
                 }
             } else {
@@ -184,8 +200,9 @@ export function convertAnthropicToGoogle(anthropicRequest) {
                 includeThoughts: true,
                 thinkingBudget: thinking?.budget_tokens || 16000
             };
-            logger.debug(`[RequestConverter] Gemini thinking enabled with budget: ${thinkingConfig.thinkingBudget}`);
-
+            logger.debug(
+                `[RequestConverter] Gemini thinking enabled with budget: ${thinkingConfig.thinkingBudget}`
+            );
 
             googleRequest.generationConfig.thinkingConfig = thinkingConfig;
         }
@@ -198,15 +215,15 @@ export function convertAnthropicToGoogle(anthropicRequest) {
             const name = tool.name || tool.function?.name || tool.custom?.name || `tool-${idx}`;
 
             // Extract description from various possible locations
-            const description = tool.description || tool.function?.description || tool.custom?.description || '';
+            const description =
+                tool.description || tool.function?.description || tool.custom?.description || '';
 
             // Extract schema from various possible locations
-            const schema = tool.input_schema
-                || tool.function?.input_schema
-                || tool.function?.parameters
-                || tool.custom?.input_schema
-                || tool.parameters
-                || { type: 'object' };
+            const schema = tool.input_schema ||
+                tool.function?.input_schema ||
+                tool.function?.parameters ||
+                tool.custom?.input_schema ||
+                tool.parameters || { type: 'object' };
 
             // Sanitize schema for general compatibility
             let parameters = sanitizeSchema(schema);
@@ -218,14 +235,18 @@ export function convertAnthropicToGoogle(anthropicRequest) {
             parameters = cleanSchema(parameters);
 
             return {
-                name: String(name).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64),
+                name: String(name)
+                    .replace(/[^a-zA-Z0-9_-]/g, '_')
+                    .slice(0, 64),
                 description: description,
                 parameters
             };
         });
 
         googleRequest.tools = [{ functionDeclarations }];
-        logger.debug(`[RequestConverter] Tools: ${JSON.stringify(googleRequest.tools).substring(0, 300)}`);
+        logger.debug(
+            `[RequestConverter] Tools: ${JSON.stringify(googleRequest.tools).substring(0, 300)}`
+        );
 
         // For Claude models, set functionCallingConfig.mode = "VALIDATED"
         // This ensures strict parameter validation (matches opencode-antigravity-auth)
@@ -239,8 +260,13 @@ export function convertAnthropicToGoogle(anthropicRequest) {
     }
 
     // Cap max tokens for Gemini models
-    if (isGeminiModel && googleRequest.generationConfig.maxOutputTokens > GEMINI_MAX_OUTPUT_TOKENS) {
-        logger.debug(`[RequestConverter] Capping Gemini max_tokens from ${googleRequest.generationConfig.maxOutputTokens} to ${GEMINI_MAX_OUTPUT_TOKENS}`);
+    if (
+        isGeminiModel &&
+        googleRequest.generationConfig.maxOutputTokens > GEMINI_MAX_OUTPUT_TOKENS
+    ) {
+        logger.debug(
+            `[RequestConverter] Capping Gemini max_tokens from ${googleRequest.generationConfig.maxOutputTokens} to ${GEMINI_MAX_OUTPUT_TOKENS}`
+        );
         googleRequest.generationConfig.maxOutputTokens = GEMINI_MAX_OUTPUT_TOKENS;
     }
 

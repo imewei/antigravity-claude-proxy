@@ -20,7 +20,7 @@ window.Components.logsViewer = () => ({
     get filteredLogs() {
         const query = this.searchQuery.trim();
         if (!query) {
-            return this.logs.filter(log => this.filters[log.level]);
+            return this.logs.filter((log) => this.filters[log.level]);
         }
 
         // Try regex first, fallback to plain text search
@@ -34,7 +34,7 @@ window.Components.logsViewer = () => ({
             matcher = (msg) => msg.toLowerCase().includes(lowerQuery);
         }
 
-        return this.logs.filter(log => {
+        return this.logs.filter((log) => {
             // Level Filter
             if (!this.filters[log.level]) return false;
 
@@ -51,8 +51,12 @@ window.Components.logsViewer = () => ({
         });
 
         // Watch filters to maintain auto-scroll if enabled
-        this.$watch('searchQuery', () => { if (this.isAutoScroll) this.$nextTick(() => this.scrollToBottom()) });
-        this.$watch('filters', () => { if (this.isAutoScroll) this.$nextTick(() => this.scrollToBottom()) });
+        this.$watch('searchQuery', () => {
+            if (this.isAutoScroll) this.$nextTick(() => this.scrollToBottom());
+        });
+        this.$watch('filters', () => {
+            if (this.isAutoScroll) this.$nextTick(() => this.scrollToBottom());
+        });
     },
 
     startLogStream() {
@@ -70,7 +74,9 @@ window.Components.logsViewer = () => ({
                 this.logs.push(log);
 
                 // Limit log buffer
-                const limit = Alpine.store('settings')?.logLimit || window.AppConstants.LIMITS.DEFAULT_LOG_LIMIT;
+                const limit =
+                    Alpine.store('settings')?.logLimit ||
+                    window.AppConstants.LIMITS.DEFAULT_LOG_LIMIT;
                 if (this.logs.length > limit) {
                     this.logs = this.logs.slice(-limit);
                 }

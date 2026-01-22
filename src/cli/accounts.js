@@ -136,7 +136,7 @@ function saveAccounts(accounts, settings = {}) {
         }
 
         const config = {
-            accounts: accounts.map(acc => ({
+            accounts: accounts.map((acc) => ({
                 email: acc.email,
                 source: 'oauth',
                 refreshToken: acc.refreshToken,
@@ -173,7 +173,7 @@ function displayAccounts(accounts) {
     accounts.forEach((acc, i) => {
         // Check for any active model-specific rate limits
         const hasActiveLimit = Object.values(acc.modelRateLimits || {}).some(
-            limit => limit.isRateLimited && limit.resetTime > Date.now()
+            (limit) => limit.isRateLimited && limit.resetTime > Date.now()
         );
         const status = hasActiveLimit ? ' (rate-limited)' : '';
         console.log(`  ${i + 1}. ${acc.email}${status}`);
@@ -206,7 +206,7 @@ async function addAccount(existingAccounts) {
         const result = await completeOAuthFlow(code, verifier);
 
         // Check if account already exists
-        const existing = existingAccounts.find(a => a.email === result.email);
+        const existing = existingAccounts.find((a) => a.email === result.email);
         if (existing) {
             console.log(`\n⚠ Account ${result.email} already exists. Updating tokens.`);
             existing.refreshToken = result.refreshToken;
@@ -261,7 +261,7 @@ async function addAccountNoBrowser(existingAccounts, rl) {
         const result = await completeOAuthFlow(code, verifier);
 
         // Check if account already exists
-        const existing = existingAccounts.find(a => a.email === result.email);
+        const existing = existingAccounts.find((a) => a.email === result.email);
         if (existing) {
             console.log(`\n⚠ Account ${result.email} already exists. Updating tokens.`);
             existing.refreshToken = result.refreshToken;
@@ -313,7 +313,9 @@ async function interactiveRemove(rl) {
         }
 
         const removed = accounts[index - 1]; // 1-based to 0-based
-        const confirm = await rl.question(`\nAre you sure you want to remove ${removed.email}? [y/N]: `);
+        const confirm = await rl.question(
+            `\nAre you sure you want to remove ${removed.email}? [y/N]: `
+        );
 
         if (confirm.toLowerCase() === 'y') {
             accounts.splice(index - 1, 1);
@@ -345,7 +347,9 @@ async function interactiveAdd(rl, noBrowser = false) {
     if (accounts.length > 0) {
         displayAccounts(accounts);
 
-        const choice = await rl.question('\n(a)dd new, (r)emove existing, (f)resh start, or (e)xit? [a/r/f/e]: ');
+        const choice = await rl.question(
+            '\n(a)dd new, (r)emove existing, (f)resh start, or (e)xit? [a/r/f/e]: '
+        );
         const c = choice.toLowerCase();
 
         if (c === 'r') {
@@ -488,7 +492,9 @@ async function main() {
                 console.log('  node src/cli/accounts.js clear   Remove all accounts');
                 console.log('  node src/cli/accounts.js help    Show this help');
                 console.log('\nOptions:');
-                console.log('  --no-browser    Manual authorization code input (for headless servers)');
+                console.log(
+                    '  --no-browser    Manual authorization code input (for headless servers)'
+                );
                 break;
             case 'remove':
                 await ensureServerStopped();

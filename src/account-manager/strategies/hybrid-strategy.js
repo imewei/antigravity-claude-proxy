@@ -93,7 +93,9 @@ export class HybridStrategy extends BaseStrategy {
 
         const position = best.index + 1;
         const total = accounts.length;
-        logger.info(`[HybridStrategy] Using account: ${best.account.email} (${position}/${total}, score: ${best.score.toFixed(1)})`);
+        logger.info(
+            `[HybridStrategy] Using account: ${best.account.email} (${position}/${total}, score: ${best.score.toFixed(1)})`
+        );
 
         return { account: best.account, index: best.index, waitMs: 0 };
     }
@@ -152,7 +154,9 @@ export class HybridStrategy extends BaseStrategy {
 
                 // Quota availability check (exclude critically low quota)
                 if (this.#quotaTracker.isQuotaCritical(account, modelId)) {
-                    logger.debug(`[HybridStrategy] Excluding ${account.email}: quota critically low for ${modelId}`);
+                    logger.debug(
+                        `[HybridStrategy] Excluding ${account.email}: quota critically low for ${modelId}`
+                    );
                     return false;
                 }
 
@@ -178,11 +182,13 @@ export class HybridStrategy extends BaseStrategy {
                 });
 
             if (fallback.length > 0) {
-                logger.warn('[HybridStrategy] Strict filters exhausted, using fallback (ignoring health/token scores)');
+                logger.warn(
+                    '[HybridStrategy] Strict filters exhausted, using fallback (ignoring health/token scores)'
+                );
                 return fallback;
             }
 
-            // Level 2 Fallback: If EVERYTHING is filtered out (e.g. all rate limited), 
+            // Level 2 Fallback: If EVERYTHING is filtered out (e.g. all rate limited),
             // return empty list so the strategy returns a wait signal.
             // valid candidates list being empty is what triggers the wait loop.
         }
@@ -205,7 +211,7 @@ export class HybridStrategy extends BaseStrategy {
         const tokens = this.#tokenBucketTracker.getTokens(email);
         const maxTokens = this.#tokenBucketTracker.getMaxTokens();
         const tokenRatio = tokens / maxTokens;
-        const tokenComponent = (tokenRatio * 100) * this.#weights.tokens;
+        const tokenComponent = tokenRatio * 100 * this.#weights.tokens;
 
         // Quota component (0-100 scaled by weight)
         const quotaScore = this.#quotaTracker.getScore(account, modelId);

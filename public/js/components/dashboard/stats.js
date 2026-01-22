@@ -36,12 +36,13 @@ window.DashboardStats = window.DashboardStats || {};
  */
 window.DashboardStats.updateStats = function (component) {
     const accounts = Alpine.store('data').accounts;
-    let active = 0, limited = 0;
+    let active = 0,
+        limited = 0;
 
     // Only count enabled accounts in statistics
-    const enabledAccounts = accounts.filter(acc => acc.enabled !== false);
+    const enabledAccounts = accounts.filter((acc) => acc.enabled !== false);
 
-    enabledAccounts.forEach(acc => {
+    enabledAccounts.forEach((acc) => {
         if (acc.status === 'ok') {
             const limits = Object.entries(acc.limits || {});
 
@@ -55,7 +56,8 @@ window.DashboardStats.updateStats = function (component) {
             // We consider all models in the limits object as "tracked"
             const hasRateLimitedModel = limits.some(([_, l]) => {
                 // Treat null/undefined fraction as 0 (limited)
-                if (!l || l.remainingFraction === null || l.remainingFraction === undefined) return true;
+                if (!l || l.remainingFraction === null || l.remainingFraction === undefined)
+                    return true;
                 return l.remainingFraction <= 0.05;
             });
 
@@ -79,7 +81,7 @@ window.DashboardStats.updateStats = function (component) {
     let totalLimitedModels = 0;
     let totalTrackedModels = 0;
 
-    enabledAccounts.forEach(acc => {
+    enabledAccounts.forEach((acc) => {
         const limits = Object.entries(acc.limits || {});
         limits.forEach(([, l]) => {
             totalTrackedModels++;
@@ -96,7 +98,7 @@ window.DashboardStats.updateStats = function (component) {
 
     // Calculate subscription tier distribution
     const subscription = { ultra: 0, pro: 0, free: 0 };
-    enabledAccounts.forEach(acc => {
+    enabledAccounts.forEach((acc) => {
         const tier = acc.subscription?.tier || 'free';
         if (tier === 'ultra') {
             subscription.ultra++;

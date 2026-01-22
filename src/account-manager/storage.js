@@ -24,7 +24,7 @@ export async function loadAccounts(configPath = ACCOUNT_CONFIG_PATH) {
         const configData = await readFile(configPath, 'utf-8');
         const config = JSON.parse(configData);
 
-        const accounts = (config.accounts || []).map(acc => ({
+        const accounts = (config.accounts || []).map((acc) => ({
             ...acc,
             lastUsed: acc.lastUsed || null,
             enabled: acc.enabled !== false, // Default to true if not specified
@@ -33,7 +33,11 @@ export async function loadAccounts(configPath = ACCOUNT_CONFIG_PATH) {
             invalidReason: null,
             modelRateLimits: acc.modelRateLimits || {},
             // New fields for subscription and quota tracking
-            subscription: acc.subscription || { tier: 'unknown', projectId: null, detectedAt: null },
+            subscription: acc.subscription || {
+                tier: 'unknown',
+                projectId: null,
+                detectedAt: null
+            },
             quota: acc.quota || { models: {}, lastChecked: null }
         }));
 
@@ -51,7 +55,9 @@ export async function loadAccounts(configPath = ACCOUNT_CONFIG_PATH) {
     } catch (error) {
         if (error.code === 'ENOENT') {
             // No config file - return empty
-            logger.info('[AccountManager] No config file found. Using Antigravity database (single account mode)');
+            logger.info(
+                '[AccountManager] No config file found. Using Antigravity database (single account mode)'
+            );
         } else {
             logger.error('[AccountManager] Failed to load config:', error.message);
         }
@@ -108,7 +114,7 @@ export async function saveAccounts(configPath, accounts, settings, activeIndex) 
         await mkdir(dir, { recursive: true });
 
         const config = {
-            accounts: accounts.map(acc => ({
+            accounts: accounts.map((acc) => ({
                 email: acc.email,
                 source: acc.source,
                 enabled: acc.enabled !== false, // Persist enabled state
@@ -122,7 +128,11 @@ export async function saveAccounts(configPath, accounts, settings, activeIndex) 
                 modelRateLimits: acc.modelRateLimits || {},
                 lastUsed: acc.lastUsed,
                 // Persist subscription and quota data
-                subscription: acc.subscription || { tier: 'unknown', projectId: null, detectedAt: null },
+                subscription: acc.subscription || {
+                    tier: 'unknown',
+                    projectId: null,
+                    detectedAt: null
+                },
                 quota: acc.quota || { models: {}, lastChecked: null }
             })),
             settings: settings,

@@ -9,7 +9,12 @@
  *
  * Runs for both Claude and Gemini model families.
  */
-const { streamRequest, analyzeContent, analyzeEvents, commonTools } = require('./helpers/http-client.cjs');
+const {
+    streamRequest,
+    analyzeContent,
+    analyzeEvents,
+    commonTools
+} = require('./helpers/http-client.cjs');
 const { getTestModels, getModelConfig } = require('./helpers/test-models.cjs');
 
 const tools = [commonTools.executeCommand];
@@ -54,9 +59,13 @@ async function runTestsForModel(family, model) {
         const events = analyzeEvents(turn1.events);
 
         console.log('  Content:');
-        console.log(`    Thinking: ${content.hasThinking ? 'YES' : 'NO'} (${content.thinking.length} blocks)`);
+        console.log(
+            `    Thinking: ${content.hasThinking ? 'YES' : 'NO'} (${content.thinking.length} blocks)`
+        );
         console.log(`    Signature: ${content.hasSignature ? 'YES' : 'NO'}`);
-        console.log(`    Tool Use: ${content.hasToolUse ? 'YES' : 'NO'} (${content.toolUse.length} calls)`);
+        console.log(
+            `    Tool Use: ${content.hasToolUse ? 'YES' : 'NO'} (${content.toolUse.length} calls)`
+        );
 
         console.log('  Events:');
         console.log(`    message_start: ${events.messageStart}`);
@@ -69,7 +78,9 @@ async function runTestsForModel(family, model) {
             console.log(`  Thinking: "${content.thinking[0].thinking.substring(0, 60)}..."`);
         }
         if (content.hasToolUse) {
-            console.log(`  Tool: ${content.toolUse[0].name}(${JSON.stringify(content.toolUse[0].input)})`);
+            console.log(
+                `  Tool: ${content.toolUse[0].name}(${JSON.stringify(content.toolUse[0].input)})`
+            );
         }
 
         // For Claude: signature is on thinking block and comes via signature_delta events
@@ -91,21 +102,23 @@ async function runTestsForModel(family, model) {
         console.log('-'.repeat(40));
 
         const lastAssistant = messages[messages.length - 1];
-        const toolUseBlock = lastAssistant.content.find(b => b.type === 'tool_use');
+        const toolUseBlock = lastAssistant.content.find((b) => b.type === 'tool_use');
 
         messages.push({
             role: 'user',
-            content: [{
-                type: 'tool_result',
-                tool_use_id: toolUseBlock.id,
-                content: `total 32
+            content: [
+                {
+                    type: 'tool_result',
+                    tool_use_id: toolUseBlock.id,
+                    content: `total 32
 drwxr-xr-x  10 user  staff   320 Dec 19 10:00 .
 drwxr-xr-x   5 user  staff   160 Dec 19 09:00 ..
 -rw-r--r--   1 user  staff  1024 Dec 19 10:00 package.json
 -rw-r--r--   1 user  staff  2048 Dec 19 10:00 README.md
 drwxr-xr-x   8 user  staff   256 Dec 19 10:00 src
 drwxr-xr-x   4 user  staff   128 Dec 19 10:00 tests`
-            }]
+                }
+            ]
         });
 
         const turn2 = await streamRequest({
@@ -126,7 +139,9 @@ drwxr-xr-x   4 user  staff   128 Dec 19 10:00 tests`
             const events = analyzeEvents(turn2.events);
 
             console.log('  Content:');
-            console.log(`    Thinking: ${content.hasThinking ? 'YES' : 'NO'} (${content.thinking.length} blocks)`);
+            console.log(
+                `    Thinking: ${content.hasThinking ? 'YES' : 'NO'} (${content.thinking.length} blocks)`
+            );
             console.log(`    Signature: ${content.hasSignature ? 'YES' : 'NO'}`);
             console.log(`    Text: ${content.hasText ? 'YES' : 'NO'}`);
 
@@ -158,7 +173,9 @@ drwxr-xr-x   4 user  staff   128 Dec 19 10:00 tests`
     }
 
     console.log('\n' + '='.repeat(60));
-    console.log(`[${family.toUpperCase()}] ${allPassed ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`);
+    console.log(
+        `[${family.toUpperCase()}] ${allPassed ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`
+    );
     console.log('='.repeat(60));
 
     return allPassed;
@@ -177,13 +194,15 @@ async function runTests() {
     console.log('\n' + '='.repeat(60));
     console.log('FINAL RESULT');
     console.log('='.repeat(60));
-    console.log(`Overall: ${allPassed ? 'ALL MODEL FAMILIES PASSED' : 'SOME MODEL FAMILIES FAILED'}`);
+    console.log(
+        `Overall: ${allPassed ? 'ALL MODEL FAMILIES PASSED' : 'SOME MODEL FAMILIES FAILED'}`
+    );
     console.log('='.repeat(60));
 
     process.exit(allPassed ? 0 : 1);
 }
 
-runTests().catch(err => {
+runTests().catch((err) => {
     console.error('Test failed with error:', err);
     process.exit(1);
 });
