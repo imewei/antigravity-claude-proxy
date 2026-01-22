@@ -5,6 +5,16 @@ import crypto from 'node:crypto';
 const MOCK_SIGNATURE = 'mock_signature_longer_than_50_chars_for_validation_purposes_123456789';
 const MOCK_TOOL_SIGNATURE = 'mock_signature_longer_than_50_chars_for_validation_purposes_on_tool_use_9876543210';
 
+// Scenarios
+const SCENARIOS = {
+    WEATHER: 'WEATHER',
+    RUN_COMMAND: 'RUN_COMMAND',
+    COMPLEX_TASK: 'COMPLEX_TASK',
+    ANALYZE_CONFIG: 'ANALYZE_CONFIG',
+    TOOL_RESULT: 'TOOL_RESULT',
+    DEFAULT: 'DEFAULT'
+};
+
 /**
  * Mock Stream Handler for Testing
  * Simulates Google Cloud Code API responses in Anthropic format
@@ -55,17 +65,17 @@ export async function* mockMessageStream(anthropicRequest) {
 function detectScenario(content, lastMessage) {
     const lowerContent = content.toLowerCase();
 
-    if (lowerContent.includes('weather')) return 'WEATHER';
-    if (lowerContent.includes('run "ls -la"')) return 'RUN_COMMAND';
-    if (lowerContent.includes('step by step')) return 'COMPLEX_TASK';
-    if (lowerContent.includes('analyze the src/config.js')) return 'ANALYZE_CONFIG';
+    if (lowerContent.includes('weather')) return SCENARIOS.WEATHER;
+    if (lowerContent.includes('run "ls -la"')) return SCENARIOS.RUN_COMMAND;
+    if (lowerContent.includes('step by step')) return SCENARIOS.COMPLEX_TASK;
+    if (lowerContent.includes('analyze the src/config.js')) return SCENARIOS.ANALYZE_CONFIG;
 
     const isToolResult = Array.isArray(lastMessage.content) &&
         lastMessage.content.some(c => c.type === 'tool_result');
 
-    if (isToolResult) return 'TOOL_RESULT';
+    if (isToolResult) return SCENARIOS.TOOL_RESULT;
 
-    return 'DEFAULT';
+    return SCENARIOS.DEFAULT;
 }
 
 /**
@@ -73,9 +83,9 @@ function detectScenario(content, lastMessage) {
  */
 function getThinkingContent(scenario) {
     switch (scenario) {
-        case 'WEATHER': return "I should check the weather for the user.";
-        case 'RUN_COMMAND': return "I should run the ls -la command.";
-        case 'COMPLEX_TASK': return "I need to read the config file first.";
+        case SCENARIOS.WEATHER: return "I should check the weather for the user.";
+        case SCENARIOS.RUN_COMMAND: return "I should run the ls -la command.";
+        case SCENARIOS.COMPLEX_TASK: return "I need to read the config file first.";
         default: return "I am thinking about the response.";
     }
 }
@@ -85,23 +95,23 @@ function getThinkingContent(scenario) {
  */
 function* emitScenarioContent(blockIndex, scenario) {
     switch (scenario) {
-        case 'WEATHER':
+        case SCENARIOS.WEATHER:
             yield* emitToolUse(blockIndex, 'get_weather', { location: "Paris" });
             break;
 
-        case 'RUN_COMMAND':
+        case SCENARIOS.RUN_COMMAND:
             yield* emitToolUse(blockIndex, 'execute_command', { command: "ls -la" });
             break;
 
-        case 'COMPLEX_TASK':
+        case SCENARIOS.COMPLEX_TASK:
             yield* emitToolUse(blockIndex, 'read_file', { path: "src/config.js" });
             break;
 
-        case 'ANALYZE_CONFIG':
+        case SCENARIOS.ANALYZE_CONFIG:
             yield* emitTextResponse(blockIndex, 'The config file looks secure enough for development, but debug:true is risky for production.');
             break;
 
-        case 'TOOL_RESULT':
+        case SCENARIOS.TOOL_RESULT:
             yield* emitTextResponse(blockIndex, 'Here is the output/result you requested.');
             break;
 
