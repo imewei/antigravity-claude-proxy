@@ -62,13 +62,13 @@ async function testRecursiveFallback() {
             selectAccount: () => ({ account: { email: 'test@example.com' }, waitMs: 0 }),
             getTokenForAccount: async () => 'fake-token',
             getProjectForAccount: async () => 'fake-project',
-            clearExpiredLimits: () => {},
+            clearExpiredLimits: () => { },
             isAllRateLimited: () => false,
-            notifyFailure: () => {},
-            notifySuccess: () => {},
+            notifyFailure: () => { },
+            notifySuccess: () => { },
             getHealthTracker: () => ({ getConsecutiveFailures: () => 0 }),
-            markRateLimited: () => {},
-            notifyRateLimit: () => {}
+            markRateLimited: () => { },
+            notifyRateLimit: () => { }
         };
 
         console.log('TEST 1: Verify Fallback Chain');
@@ -82,8 +82,8 @@ async function testRecursiveFallback() {
         console.log('  Triggering stream request...');
         const generator = sendMessageStream(request, mockAccountManager, true); // fallbackEnabled=true
 
+        // eslint-disable-next-line no-unused-vars
         for await (const chunk of generator) {
-            // eslint-disable-line no-unused-vars
             // Consume stream
         }
 

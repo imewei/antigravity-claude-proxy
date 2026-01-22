@@ -38,6 +38,10 @@ export async function* streamSSEResponse(response, originalModel) {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
+
+        // Optimization: Only split if we have a newline (complete event)
+        if (!buffer.includes('\n')) continue;
+
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
 

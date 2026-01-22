@@ -93,6 +93,7 @@ export const DEFAULT_COOLDOWN_MS = config?.defaultCooldownMs || 10 * 1000; // Fr
 export const MAX_RETRIES = config?.maxRetries || 5; // From config or 5
 export const MAX_EMPTY_RESPONSE_RETRIES = 2; // Max retries for empty API responses (from upstream)
 export const MAX_ACCOUNTS = config?.maxAccounts || 10; // From config or 10
+export const REQUEST_TIMEOUT_MS = config?.requestTimeoutMs || 300000; // From config or 5 minutes
 
 // Rate limit wait thresholds
 export const MAX_WAIT_BEFORE_ERROR_MS = config?.maxWaitBeforeErrorMs || 120000; // From config or 2 minutes
@@ -252,6 +253,7 @@ export default {
     MAX_RETRIES,
     MAX_EMPTY_RESPONSE_RETRIES,
     MAX_ACCOUNTS,
+    REQUEST_TIMEOUT_MS,
     MAX_WAIT_BEFORE_ERROR_MS,
     RATE_LIMIT_DEDUP_WINDOW_MS,
     MAX_CONSECUTIVE_FAILURES,

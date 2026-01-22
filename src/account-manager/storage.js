@@ -11,6 +11,10 @@ import { ACCOUNT_CONFIG_PATH } from '../constants.js';
 import { getAuthStatus } from '../auth/database.js';
 import { logger } from '../utils/logger.js';
 
+import { Mutex } from 'async-mutex';
+
+const storageMutex = new Mutex();
+
 /**
  * Load accounts from the config file
  *
@@ -18,51 +22,53 @@ import { logger } from '../utils/logger.js';
  * @returns {Promise<{accounts: Array, settings: Object, activeIndex: number}>}
  */
 export async function loadAccounts(configPath = ACCOUNT_CONFIG_PATH) {
-    try {
-        // Check if config file exists using async access
-        await access(configPath, fsConstants.F_OK);
-        const configData = await readFile(configPath, 'utf-8');
-        const config = JSON.parse(configData);
+    return storageMutex.runExclusive(async () => {
+        try {
+            // Check if config file exists using async access
+            await access(configPath, fsConstants.F_OK);
+            const configData = await readFile(configPath, 'utf-8');
+            const config = JSON.parse(configData);
 
-        const accounts = (config.accounts || []).map((acc) => ({
-            ...acc,
-            lastUsed: acc.lastUsed || null,
-            enabled: acc.enabled !== false, // Default to true if not specified
-            // Reset invalid flag on startup - give accounts a fresh chance to refresh
-            isInvalid: false,
-            invalidReason: null,
-            modelRateLimits: acc.modelRateLimits || {},
-            // New fields for subscription and quota tracking
-            subscription: acc.subscription || {
-                tier: 'unknown',
-                projectId: null,
-                detectedAt: null
-            },
-            quota: acc.quota || { models: {}, lastChecked: null }
-        }));
+            const accounts = (config.accounts || []).map((acc) => ({
+                ...acc,
+                lastUsed: acc.lastUsed || null,
+                enabled: acc.enabled !== false, // Default to true if not specified
+                // Reset invalid flag on startup - give accounts a fresh chance to refresh
+                isInvalid: false,
+                invalidReason: null,
+                modelRateLimits: acc.modelRateLimits || {},
+                // New fields for subscription and quota tracking
+                subscription: acc.subscription || {
+                    tier: 'unknown',
+                    projectId: null,
+                    detectedAt: null
+                },
+                quota: acc.quota || { models: {}, lastChecked: null }
+            }));
 
-        const settings = config.settings || {};
-        let activeIndex = config.activeIndex || 0;
+            const settings = config.settings || {};
+            let activeIndex = config.activeIndex || 0;
 
-        // Clamp activeIndex to valid range
-        if (activeIndex >= accounts.length) {
-            activeIndex = 0;
+            // Clamp activeIndex to valid range
+            if (activeIndex >= accounts.length) {
+                activeIndex = 0;
+            }
+
+            logger.info(`[AccountManager] Loaded ${accounts.length} account(s) from config`);
+
+            return { accounts, settings, activeIndex };
+        } catch (error) {
+            if (error.code === 'ENOENT') {
+                // No config file - return empty
+                logger.info(
+                    '[AccountManager] No config file found. Using Antigravity database (single account mode)'
+                );
+            } else {
+                logger.error('[AccountManager] Failed to load config:', error.message);
+            }
+            return { accounts: [], settings: {}, activeIndex: 0 };
         }
-
-        logger.info(`[AccountManager] Loaded ${accounts.length} account(s) from config`);
-
-        return { accounts, settings, activeIndex };
-    } catch (error) {
-        if (error.code === 'ENOENT') {
-            // No config file - return empty
-            logger.info(
-                '[AccountManager] No config file found. Using Antigravity database (single account mode)'
-            );
-        } else {
-            logger.error('[AccountManager] Failed to load config:', error.message);
-        }
-        return { accounts: [], settings: {}, activeIndex: 0 };
-    }
+    });
 }
 
 /**
@@ -108,42 +114,44 @@ export function loadDefaultAccount(dbPath) {
  * @param {number} activeIndex - Current active account index
  */
 export async function saveAccounts(configPath, accounts, settings, activeIndex) {
-    try {
-        // Ensure directory exists
-        const dir = path.dirname(configPath);
-        await mkdir(dir, { recursive: true });
+    return storageMutex.runExclusive(async () => {
+        try {
+            // Ensure directory exists
+            const dir = path.dirname(configPath);
+            await mkdir(dir, { recursive: true });
 
-        const config = {
-            accounts: accounts.map((acc) => ({
-                email: acc.email,
-                source: acc.source,
-                enabled: acc.enabled !== false, // Persist enabled state
-                dbPath: acc.dbPath || null,
-                refreshToken: acc.source === 'oauth' ? acc.refreshToken : undefined,
-                apiKey: acc.source === 'manual' ? acc.apiKey : undefined,
-                projectId: acc.projectId || undefined,
-                addedAt: acc.addedAt || undefined,
-                isInvalid: acc.isInvalid || false,
-                invalidReason: acc.invalidReason || null,
-                modelRateLimits: acc.modelRateLimits || {},
-                lastUsed: acc.lastUsed,
-                // Persist subscription and quota data
-                subscription: acc.subscription || {
-                    tier: 'unknown',
-                    projectId: null,
-                    detectedAt: null
-                },
-                quota: acc.quota || { models: {}, lastChecked: null }
-            })),
-            settings: settings,
-            activeIndex: activeIndex
-        };
+            const config = {
+                accounts: accounts.map((acc) => ({
+                    email: acc.email,
+                    source: acc.source,
+                    enabled: acc.enabled !== false, // Persist enabled state
+                    dbPath: acc.dbPath || null,
+                    refreshToken: acc.source === 'oauth' ? acc.refreshToken : undefined,
+                    apiKey: acc.source === 'manual' ? acc.apiKey : undefined,
+                    projectId: acc.projectId || undefined,
+                    addedAt: acc.addedAt || undefined,
+                    isInvalid: acc.isInvalid || false,
+                    invalidReason: acc.invalidReason || null,
+                    modelRateLimits: acc.modelRateLimits || {},
+                    lastUsed: acc.lastUsed,
+                    // Persist subscription and quota data
+                    subscription: acc.subscription || {
+                        tier: 'unknown',
+                        projectId: null,
+                        detectedAt: null
+                    },
+                    quota: acc.quota || { models: {}, lastChecked: null }
+                })),
+                settings: settings,
+                activeIndex: activeIndex
+            };
 
-        // Atomic write: write to .tmp file then rename
-        const tempPath = `${configPath}.tmp`;
-        await writeFile(tempPath, JSON.stringify(config, null, 2));
-        await rename(tempPath, configPath);
-    } catch (error) {
-        logger.error('[AccountManager] Failed to save config:', error.message);
-    }
+            // Atomic write: write to .tmp file then rename
+            const tempPath = `${configPath}.tmp`;
+            await writeFile(tempPath, JSON.stringify(config, null, 2));
+            await rename(tempPath, configPath);
+        } catch (error) {
+            logger.error('[AccountManager] Failed to save config:', error.message);
+        }
+    });
 }

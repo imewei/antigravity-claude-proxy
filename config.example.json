@@ -32,6 +32,10 @@
     "persistTokenCache": false,
 
     "requestTimeoutMs": 300000,
+    "_requestTimeoutMs_comment": "Upstream request timeout in milliseconds. Default: 300000 (5 minutes).",
+
+    "corsOrigin": "",
+    "_corsOrigin_comment": "Comma-separated CORS allowlist. Empty = no CORS. Env override: CORS_ORIGIN.",
 
     "maxAccounts": 10,
     "_maxAccounts_comment": "Maximum number of Google accounts allowed (1-100). Default: 10.",

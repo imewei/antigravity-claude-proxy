@@ -4,11 +4,10 @@
  */
 
 import { proxyServer, accountManager } from './server.js';
-import { DEFAULT_PORT } from './constants.js';
+import { ACCOUNT_CONFIG_PATH, DEFAULT_PORT } from './constants.js';
 import { logger } from './utils/logger.js';
 import { STRATEGY_NAMES } from './account-manager/strategies/index.js';
 import path from 'node:path';
-import os from 'node:os';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -49,8 +48,7 @@ export const FALLBACK_ENABLED = isFallbackEnabled;
 const PORT = process.env.PORT || DEFAULT_PORT;
 
 // Home directory for account storage
-const HOME_DIR = os.homedir();
-const CONFIG_DIR = path.join(HOME_DIR, '.antigravity-claude-proxy');
+const CONFIG_DIR = path.dirname(ACCOUNT_CONFIG_PATH);
 
 // Setup and start server
 async function main() {
@@ -103,8 +101,8 @@ async function main() {
     logger.log(`
 ╔══════════════════════════════════════════════════════════════╗
 ║           Antigravity Claude Proxy Server                    ║
-93: ╠══════════════════════════════════════════════════════════════╣
-94: ║                                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
 ${border}  ${align(`Server and WebUI running at: http://localhost:${PORT}`)}${border}
 ${statusSection}║                                                              ║
 ${controlSection}
@@ -145,10 +143,14 @@ main().catch((err) => {
     process.exit(1);
 });
 
+import { closeDatabase } from './auth/database.js';
+
 // Graceful shutdown
 const shutdown = async () => {
     logger.info('Shutting down server...');
     await proxyServer.stop();
+    // Close shared database connection
+    closeDatabase();
     logger.success('Server stopped');
     process.exit(0);
 };

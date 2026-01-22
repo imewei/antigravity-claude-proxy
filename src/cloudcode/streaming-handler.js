@@ -15,10 +15,11 @@ import {
     MAX_CONSECUTIVE_FAILURES,
     EXTENDED_COOLDOWN_MS,
     CAPACITY_RETRY_DELAY_MS,
-    MAX_CAPACITY_RETRIES
+    MAX_CAPACITY_RETRIES,
+    REQUEST_TIMEOUT_MS
 } from '../constants.js';
 import { isRateLimitError, isAuthError, isEmptyResponseError } from '../errors.js';
-import { formatDuration, sleep, isNetworkError } from '../utils/helpers.js';
+import { formatDuration, sleep, isNetworkError, createTimeoutSignal } from '../utils/helpers.js';
 import { logger } from '../utils/logger.js';
 import { parseResetTime } from './rate-limit-parser.js';
 import { buildCloudCodeRequest, buildHeaders } from './request-builder.js';
@@ -212,9 +213,9 @@ export async function* sendMessageStream(
 
         try {
             // Get token and project for this account
-            const token = await accountManager.getTokenForAccount(account);
-            const project = await accountManager.getProjectForAccount(account, token);
-            const payload = buildCloudCodeRequest(anthropicRequest, project);
+            let token = await accountManager.getTokenForAccount(account);
+            let project = await accountManager.getProjectForAccount(account, token);
+            let payload = buildCloudCodeRequest(anthropicRequest, project);
 
             logger.debug(`[CloudCode] Starting stream for model: ${model}`);
 
@@ -229,17 +230,31 @@ export async function* sendMessageStream(
                 try {
                     const url = `${endpoint}/v1internal:streamGenerateContent?alt=sse`;
 
+                    const { signal: timeoutSignal, cleanup, didTimeout } = createTimeoutSignal(
+                        REQUEST_TIMEOUT_MS,
+                        signal
+                    );
                     const fetchOptions = {
                         method: 'POST',
                         headers: buildHeaders(token, model, 'text/event-stream'),
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify(payload),
+                        signal: timeoutSignal
                     };
 
-                    if (signal) {
-                        fetchOptions.signal = signal;
+                    let response;
+                    try {
+                        response = await fetch(url, fetchOptions);
+                    } catch (fetchError) {
+                        if (didTimeout()) {
+                            throw new Error('Request timeout');
+                        }
+                        if (fetchError?.name === 'AbortError') {
+                            throw fetchError;
+                        }
+                        throw fetchError;
+                    } finally {
+                        cleanup();
                     }
-
-                    const response = await fetch(url, fetchOptions);
 
                     if (!response.ok) {
                         const errorText = await response.text();
@@ -263,6 +278,9 @@ export async function* sendMessageStream(
                             // Transient auth error - clear caches and retry
                             accountManager.clearTokenCache(account.email);
                             accountManager.clearProjectCache(account.email);
+                            token = await accountManager.getTokenForAccount(account);
+                            project = await accountManager.getProjectForAccount(account, token);
+                            payload = buildCloudCodeRequest(anthropicRequest, project);
                             endpointIndex++;
                             continue;
                         }
@@ -384,14 +402,31 @@ export async function* sendMessageStream(
                             await sleep(backoffMs);
 
                             // Refetch the response
+                            const {
+                                signal: retrySignal,
+                                cleanup: retryCleanup,
+                                didTimeout: retryDidTimeout
+                            } = createTimeoutSignal(REQUEST_TIMEOUT_MS, signal);
                             const retryFetchOptions = {
                                 method: 'POST',
                                 headers: buildHeaders(token, model, 'text/event-stream'),
-                                body: JSON.stringify(payload)
+                                body: JSON.stringify(payload),
+                                signal: retrySignal
                             };
-                            if (signal) retryFetchOptions.signal = signal;
 
-                            currentResponse = await fetch(url, retryFetchOptions);
+                            try {
+                                currentResponse = await fetch(url, retryFetchOptions);
+                            } catch (retryFetchError) {
+                                if (retryDidTimeout()) {
+                                    throw new Error('Request timeout');
+                                }
+                                if (retryFetchError?.name === 'AbortError') {
+                                    throw retryFetchError;
+                                }
+                                throw retryFetchError;
+                            } finally {
+                                retryCleanup();
+                            }
 
                             // Handle specific error codes on retry
                             if (!currentResponse.ok) {
@@ -434,14 +469,31 @@ export async function* sendMessageStream(
                                     );
                                     await sleep(1000);
                                     await sleep(1000);
+                                    const {
+                                        signal: nextRetrySignal,
+                                        cleanup: nextRetryCleanup,
+                                        didTimeout: nextRetryDidTimeout
+                                    } = createTimeoutSignal(REQUEST_TIMEOUT_MS, signal);
                                     const nextRetryOptions = {
                                         method: 'POST',
                                         headers: buildHeaders(token, model, 'text/event-stream'),
-                                        body: JSON.stringify(payload)
+                                        body: JSON.stringify(payload),
+                                        signal: nextRetrySignal
                                     };
-                                    if (signal) nextRetryOptions.signal = signal;
 
-                                    currentResponse = await fetch(url, nextRetryOptions);
+                                    try {
+                                        currentResponse = await fetch(url, nextRetryOptions);
+                                    } catch (nextRetryError) {
+                                        if (nextRetryDidTimeout()) {
+                                            throw new Error('Request timeout');
+                                        }
+                                        if (nextRetryError?.name === 'AbortError') {
+                                            throw nextRetryError;
+                                        }
+                                        throw nextRetryError;
+                                    } finally {
+                                        nextRetryCleanup();
+                                    }
                                     if (currentResponse.ok) {
                                         continue;
                                     }

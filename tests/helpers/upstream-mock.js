@@ -114,12 +114,12 @@ function handleRequest(req, res, data) {
 
     // Simulate Thinking/Signatures if requested
     const isThinking = model.includes('thinking') || model.includes('gemini');
+    const signature = 's'.repeat(60); // Must be > 50 chars for tests
 
     const parts = [];
 
     if (isThinking) {
         // Add thinking block with signature
-        const signature = 's'.repeat(60); // Must be > 50 chars
         parts.push({
             thought: true,
             text: 'I am thinking about the weather...',
@@ -138,6 +138,20 @@ function handleRequest(req, res, data) {
             functionCall: {
                 name: 'get_weather',
                 args: { location: 'Paris' }
+            },
+            thoughtSignature: isThinking ? 't'.repeat(60) : undefined
+        });
+    } else if (content.includes('config.js') && !hasToolResult) {
+        // Interleaved Thinking Test: step 1
+        parts.push({
+            thought: true,
+            text: 'I should read the file src/config.js first to understand the structure.',
+            thoughtSignature: signature
+        });
+        parts.push({
+            functionCall: {
+                name: 'read_file',
+                args: { path: 'src/config.js' }
             },
             thoughtSignature: isThinking ? 't'.repeat(60) : undefined
         });
@@ -178,6 +192,16 @@ function handleRequest(req, res, data) {
             parts.push({
                 text: 'The directory contains package.json and README.md.'
             });
+        } else if (resultText.includes('module.exports')) {
+            // Interleaved Thinking Test: step 2 (after read config)
+            parts.push({
+                thought: true,
+                text: 'Reflecting on the config content. It seems to be a standard Express config.',
+                thoughtSignature: signature
+            });
+            parts.push({
+                text: 'The config file is secure.'
+            });
         } else {
             // TURN 3 of File Test or Weather Test: Final Answer
             parts.push({
@@ -198,14 +222,14 @@ function handleRequest(req, res, data) {
         candidates: [
             {
                 content: { parts },
-                finishReason: parts.some((p) => p.functionCall) ? 'STOP' : 'STOP',
-                usageMetadata: {
-                    promptTokenCount: 10,
-                    candidatesTokenCount: 10,
-                    cachedContentTokenCount: cachedTokens
-                }
+                finishReason: parts.some((p) => p.functionCall) ? 'STOP' : 'STOP'
             }
-        ]
+        ],
+        usageMetadata: {
+            promptTokenCount: 210,
+            candidatesTokenCount: 10,
+            cachedContentTokenCount: cachedTokens
+        }
     };
 
     // Debug logging

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { forceRefresh } from '../../auth/token-extractor.js';
 import { listModels } from '../../cloudcode/index.js';
+import { config } from '../../config.js';
 import { logger } from '../../utils/logger.js';
 
 /**
@@ -13,21 +14,37 @@ import { logger } from '../../utils/logger.js';
 export function createAuthRouter({ accountManager, ensureInitialized }) {
     const router = Router();
 
+    function requireWebuiPassword(req, res) {
+        if (!config.webuiPassword) return true;
+
+        const webuiPassword = req.headers['x-webui-password'] || req.query.password;
+        if (webuiPassword === config.webuiPassword) return true;
+
+        res.status(401).json({
+            type: 'error',
+            error: {
+                type: 'authentication_error',
+                message: 'Invalid or missing credentials'
+            }
+        });
+        return false;
+    }
+
     /**
      * Force token refresh endpoint
      */
     router.post('/refresh-token', async (req, res) => {
         try {
+            if (!requireWebuiPassword(req, res)) return;
             await ensureInitialized();
             // Clear all caches
             accountManager.clearTokenCache();
             accountManager.clearProjectCache();
             // Force refresh default token
-            const token = await forceRefresh();
+            await forceRefresh();
             res.json({
                 status: 'ok',
-                message: 'Token caches cleared and refreshed',
-                tokenPrefix: token.substring(0, 10) + '...'
+                message: 'Token caches cleared and refreshed'
             });
         } catch (error) {
             res.status(500).json({

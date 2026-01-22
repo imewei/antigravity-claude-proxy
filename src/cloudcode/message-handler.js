@@ -15,11 +15,12 @@ import {
     EXTENDED_COOLDOWN_MS,
     CAPACITY_RETRY_DELAY_MS,
     MAX_CAPACITY_RETRIES,
+    REQUEST_TIMEOUT_MS,
     isThinkingModel
 } from '../constants.js';
 import { convertGoogleToAnthropic } from '../format/index.js';
 import { isRateLimitError, isAuthError } from '../errors.js';
-import { formatDuration, sleep, isNetworkError } from '../utils/helpers.js';
+import { formatDuration, sleep, isNetworkError, createTimeoutSignal } from '../utils/helpers.js';
 import { logger } from '../utils/logger.js';
 import { parseResetTime } from './rate-limit-parser.js';
 import { buildCloudCodeRequest, buildHeaders } from './request-builder.js';
@@ -208,9 +209,9 @@ export async function sendMessage(anthropicRequest, accountManager, fallbackEnab
 
         try {
             // Get token and project for this account
-            const token = await accountManager.getTokenForAccount(account);
-            const project = await accountManager.getProjectForAccount(account, token);
-            const payload = buildCloudCodeRequest(anthropicRequest, project);
+            let token = await accountManager.getTokenForAccount(account);
+            let project = await accountManager.getProjectForAccount(account, token);
+            let payload = buildCloudCodeRequest(anthropicRequest, project);
 
             logger.debug(`[CloudCode] Sending request for model: ${model}`);
 
@@ -227,15 +228,27 @@ export async function sendMessage(anthropicRequest, accountManager, fallbackEnab
                         ? `${endpoint}/v1internal:streamGenerateContent?alt=sse`
                         : `${endpoint}/v1internal:generateContent`;
 
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: buildHeaders(
-                            token,
-                            model,
-                            isThinking ? 'text/event-stream' : 'application/json'
-                        ),
-                        body: JSON.stringify(payload)
-                    });
+                    const { signal, cleanup, didTimeout } = createTimeoutSignal(REQUEST_TIMEOUT_MS);
+                    let response;
+                    try {
+                        response = await fetch(url, {
+                            method: 'POST',
+                            headers: buildHeaders(
+                                token,
+                                model,
+                                isThinking ? 'text/event-stream' : 'application/json'
+                            ),
+                            body: JSON.stringify(payload),
+                            signal
+                        });
+                    } catch (fetchError) {
+                        if (didTimeout()) {
+                            throw new Error('Request timeout');
+                        }
+                        throw fetchError;
+                    } finally {
+                        cleanup();
+                    }
 
                     if (!response.ok) {
                         const errorText = await response.text();
@@ -260,6 +273,9 @@ export async function sendMessage(anthropicRequest, accountManager, fallbackEnab
                             logger.warn('[CloudCode] Transient auth error, refreshing token...');
                             accountManager.clearTokenCache(account.email);
                             accountManager.clearProjectCache(account.email);
+                            token = await accountManager.getTokenForAccount(account);
+                            project = await accountManager.getProjectForAccount(account, token);
+                            payload = buildCloudCodeRequest(anthropicRequest, project);
                             endpointIndex++;
                             continue;
                         }

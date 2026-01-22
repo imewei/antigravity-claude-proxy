@@ -70,9 +70,9 @@ function loadDatabaseModule() {
             } else {
                 moduleLoadError = new NativeModuleError(
                     'Failed to auto-rebuild native module. Please run manually:\n' +
-                        '  npm rebuild better-sqlite3\n' +
-                        'Or if using npx, find the package location in the error and run:\n' +
-                        '  cd /path/to/better-sqlite3 && npm rebuild',
+                    '  npm rebuild better-sqlite3\n' +
+                    'Or if using npx, find the package location in the error and run:\n' +
+                    '  cd /path/to/better-sqlite3 && npm rebuild',
                     false, // rebuildSucceeded
                     false // restartRequired
                 );
@@ -85,6 +85,58 @@ function loadDatabaseModule() {
     }
 }
 
+// Singleton database instance
+let dbInstance = null;
+let currentDbPath = null;
+
+/**
+ * Close the active database connection
+ */
+export function closeDatabase() {
+    if (dbInstance) {
+        try {
+            if (dbInstance.open) {
+                dbInstance.close();
+            }
+        } catch (err) {
+            logger.warn('[Database] Error closing connection:', err.message);
+        }
+        dbInstance = null;
+        currentDbPath = null;
+    }
+}
+
+/**
+ * Get a shared database connection
+ * @param {Function} Db - The Database constructor
+ * @param {string} dbPath - Path to the database
+ * @returns {Object} Database instance
+ */
+function getDbConnection(Db, dbPath) {
+    // Reuse existing connection if path matches and it's open
+    if (dbInstance && currentDbPath === dbPath) {
+        if (dbInstance.open) {
+            return dbInstance;
+        }
+        // If closed but path matches, existing instance is stale
+        dbInstance = null;
+    }
+
+    // If path changed, close old connection
+    if (dbInstance && currentDbPath !== dbPath) {
+        closeDatabase();
+    }
+
+    // Create new connection
+    dbInstance = new Db(dbPath, {
+        readonly: true,
+        fileMustExist: true
+    });
+    currentDbPath = dbPath;
+
+    return dbInstance;
+}
+
 /**
  * Query Antigravity database for authentication status
  * @param {string} [dbPath] - Optional custom database path
@@ -93,13 +145,9 @@ function loadDatabaseModule() {
  */
 export function getAuthStatus(dbPath = ANTIGRAVITY_DB_PATH) {
     const Db = loadDatabaseModule();
-    let db;
+
     try {
-        // Open database in read-only mode
-        db = new Db(dbPath, {
-            readonly: true,
-            fileMustExist: true
-        });
+        const db = getDbConnection(Db, dbPath);
 
         // Prepare and execute query
         const stmt = db.prepare("SELECT value FROM ItemTable WHERE key = 'antigravityAuthStatus'");
@@ -122,7 +170,7 @@ export function getAuthStatus(dbPath = ANTIGRAVITY_DB_PATH) {
         if (error.code === 'SQLITE_CANTOPEN') {
             throw new Error(
                 `Database not found at ${dbPath}. ` +
-                    'Make sure Antigravity is installed and you are logged in.'
+                'Make sure Antigravity is installed and you are logged in.'
             );
         }
         // Re-throw with context if not already our error
@@ -134,12 +182,9 @@ export function getAuthStatus(dbPath = ANTIGRAVITY_DB_PATH) {
             throw error;
         }
         throw new Error(`Failed to read Antigravity database: ${error.message}`);
-    } finally {
-        // Always close database connection
-        if (db) {
-            db.close();
-        }
     }
+    // Note: Connection is kept open for reuse. 
+    // It should be closed via closeDatabase() on server shutdown if needed.
 }
 
 /**

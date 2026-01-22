@@ -172,11 +172,9 @@ function setupMiddleware(app) {
     // Save synchronously on exit to ensure data persistence
     process.on('SIGINT', () => {
         saveSync();
-        process.exit();
     });
     process.on('SIGTERM', () => {
         saveSync();
-        process.exit();
     });
 
     // Request interceptor
