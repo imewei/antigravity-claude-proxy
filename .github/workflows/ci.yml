@@ -23,7 +23,7 @@ jobs:
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
-                  node-version: '20'
+                  node-version: '25'
                   cache: 'npm'
 
             - name: Install dependencies
@@ -40,7 +40,7 @@ jobs:
         timeout-minutes: 15
         strategy:
             matrix:
-                node-version: [18, 20, 22]
+                node-version: [25]
         steps:
             - uses: actions/checkout@v4
 
