@@ -67,7 +67,8 @@ async function testRecursiveFallback() {
             notifyFailure: () => { },
             notifySuccess: () => { },
             getHealthTracker: () => ({ getConsecutiveFailures: () => 0 }),
-            markRateLimited: () => { }
+            markRateLimited: () => { },
+            notifyRateLimit: () => { }
         };
 
         console.log('TEST 1: Verify Fallback Chain');

@@ -177,8 +177,12 @@ export function isRateLimitError(error) {
     const msg = (error.message || '').toLowerCase();
     return msg.includes('429') ||
         msg.includes('resource_exhausted') ||
+        msg.includes('resource exhausted') ||
         msg.includes('quota_exhausted') ||
-        msg.includes('rate limit');
+        msg.includes('quota exhausted') ||
+        msg.includes('rate limit') ||
+        msg.includes('rate_limited') ||
+        msg.includes('model_capacity_exhausted');
 }
 
 /**
