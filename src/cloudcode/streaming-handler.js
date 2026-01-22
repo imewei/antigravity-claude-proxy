@@ -24,7 +24,7 @@ import { parseResetTime } from './rate-limit-parser.js';
 import { buildCloudCodeRequest, buildHeaders } from './request-builder.js';
 import { streamSSEResponse } from './sse-streamer.js';
 import { getFallbackModel } from '../fallback-config.js';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 /**
  * Gap 1: Rate limit deduplication - prevents thundering herd on concurrent rate limits
@@ -117,7 +117,7 @@ setInterval(() => {
  * @yields {Object} Anthropic-format SSE events (message_start, content_block_start, content_block_delta, etc.)
  * @throws {Error} If max retries exceeded or no accounts available
  */
-export async function* sendMessageStream(anthropicRequest, accountManager, fallbackEnabled = false) {
+export async function* sendMessageStream(anthropicRequest, accountManager, fallbackEnabled = false, signal = null) {
     const model = anthropicRequest.model;
 
     // Retry loop with account failover
@@ -146,7 +146,7 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                             logger.warn(`[CloudCode] All accounts exhausted for ${model} (${formatDuration(minWaitMs)} wait). Attempting fallback to ${fallbackModel} (streaming)`);
                             const fallbackRequest = { ...anthropicRequest, model: fallbackModel };
                             // Pass fallbackEnabled=true (or inherit) to allow chaining
-                            yield* sendMessageStream(fallbackRequest, accountManager, fallbackEnabled);
+                            yield* sendMessageStream(fallbackRequest, accountManager, fallbackEnabled, signal);
                             return;
                         }
                     }
@@ -207,11 +207,17 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                 try {
                     const url = `${endpoint}/v1internal:streamGenerateContent?alt=sse`;
 
-                    const response = await fetch(url, {
+                    const fetchOptions = {
                         method: 'POST',
                         headers: buildHeaders(token, model, 'text/event-stream'),
                         body: JSON.stringify(payload)
-                    });
+                    };
+
+                    if (signal) {
+                        fetchOptions.signal = signal;
+                    }
+
+                    const response = await fetch(url, fetchOptions);
 
                     if (!response.ok) {
                         const errorText = await response.text();
@@ -325,11 +331,14 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                             await sleep(backoffMs);
 
                             // Refetch the response
-                            currentResponse = await fetch(url, {
+                            const retryFetchOptions = {
                                 method: 'POST',
                                 headers: buildHeaders(token, model, 'text/event-stream'),
                                 body: JSON.stringify(payload)
-                            });
+                            };
+                            if (signal) retryFetchOptions.signal = signal;
+
+                            currentResponse = await fetch(url, retryFetchOptions);
 
                             // Handle specific error codes on retry
                             if (!currentResponse.ok) {
@@ -358,11 +367,15 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
                                 if (currentResponse.status >= 500) {
                                     logger.warn(`[CloudCode] Retry got ${currentResponse.status}, will retry...`);
                                     await sleep(1000);
-                                    currentResponse = await fetch(url, {
+                                    await sleep(1000);
+                                    const nextRetryOptions = {
                                         method: 'POST',
                                         headers: buildHeaders(token, model, 'text/event-stream'),
                                         body: JSON.stringify(payload)
-                                    });
+                                    };
+                                    if (signal) nextRetryOptions.signal = signal;
+
+                                    currentResponse = await fetch(url, nextRetryOptions);
                                     if (currentResponse.ok) {
                                         continue;
                                     }
@@ -449,7 +462,7 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
             logger.warn(`[CloudCode] All retries exhausted for ${model}. Attempting fallback to ${fallbackModel} (streaming)`);
             const fallbackRequest = { ...anthropicRequest, model: fallbackModel };
             // Pass fallbackEnabled=true (or inherit) to allow chaining
-            yield* sendMessageStream(fallbackRequest, accountManager, fallbackEnabled);
+            yield* sendMessageStream(fallbackRequest, accountManager, fallbackEnabled, signal);
             return;
         }
     }
