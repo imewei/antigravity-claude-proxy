@@ -18,6 +18,7 @@
 import { BaseStrategy } from './base-strategy.js';
 import { HealthTracker, TokenBucketTracker, QuotaTracker } from './trackers/index.js';
 import { logger } from '../../utils/logger.js';
+import { DEFAULT_COOLDOWN_MS, EXTENDED_COOLDOWN_MS } from '../../constants.js';
 
 // Default weights for scoring
 const DEFAULT_WEIGHTS = {
@@ -61,15 +62,15 @@ export class HybridStrategy extends BaseStrategy {
         const { onSave } = options;
 
         if (accounts.length === 0) {
-            return { account: null, index: 0, waitMs: 0 };
+            return { account: null, index: 0, waitMs: DEFAULT_COOLDOWN_MS }; // Wait if no accounts configured
         }
 
         // Get candidates that pass all filters
         const candidates = this.#getCandidates(accounts, modelId);
 
         if (candidates.length === 0) {
-            logger.debug('[HybridStrategy] No candidates available');
-            return { account: null, index: 0, waitMs: 0 };
+            logger.debug('[HybridStrategy] No candidates available, waiting...');
+            return { account: null, index: 0, waitMs: DEFAULT_COOLDOWN_MS };
         }
 
         // Score and sort candidates
@@ -161,18 +162,29 @@ export class HybridStrategy extends BaseStrategy {
         // If no candidates after quota filter, fall back to all usable accounts
         // (better to use critical quota than fail entirely)
         if (candidates.length === 0) {
+            // Level 1 Fallback: Try accounts that are not rate limited, even if health/tokens/quota are bad
+            // This prioritizes simply having *an* account over having a *good* account
             const fallback = accounts
                 .map((account, index) => ({ account, index }))
                 .filter(({ account }) => {
                     if (!this.isAccountUsable(account, modelId)) return false;
-                    if (!this.#healthTracker.isUsable(account.email)) return false;
+
+                    // Respect token limits even in fallback to prevent abuse
                     if (!this.#tokenBucketTracker.hasTokens(account.email)) return false;
+
+                    // Ignore health scores and non-critical quota checks
+                    // This allows "unhealthy" accounts to be used as a last resort
                     return true;
                 });
+
             if (fallback.length > 0) {
-                logger.warn('[HybridStrategy] All accounts have critical quota, using fallback');
+                logger.warn('[HybridStrategy] Strict filters exhausted, using fallback (ignoring health/token scores)');
                 return fallback;
             }
+
+            // Level 2 Fallback: If EVERYTHING is filtered out (e.g. all rate limited), 
+            // return empty list so the strategy returns a wait signal.
+            // valid candidates list being empty is what triggers the wait loop.
         }
 
         return candidates;

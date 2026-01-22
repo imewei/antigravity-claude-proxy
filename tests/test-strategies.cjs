@@ -699,8 +699,12 @@ async function runTests() {
         const accounts = createMockAccounts(3);
 
         // All accounts start with health 40, which is below minUsable 50
+        // Trigger fallback behavior (should select one anyway)
         const result = strategy.selectAccount(accounts, 'model');
-        assertNull(result.account, 'Should filter all accounts with low health');
+
+        // OLD: assertNull(result.account, 'Should filter all accounts with low health');
+        // NEW: Expect fallback
+        assertTrue(result.account !== null, 'Should fallback to unhealthy account when all are unhealthy');
     });
 
     test('HybridStrategy: filters out accounts without tokens', () => {

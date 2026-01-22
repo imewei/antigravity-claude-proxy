@@ -1,7 +1,9 @@
 import fs from 'fs';
+import { promises as fsPromises } from 'fs';
 import path from 'path';
 
 import { USAGE_HISTORY_PATH } from '../constants.js';
+import { logger } from '../utils/logger.js';
 
 // Persistence path
 const HISTORY_FILE = USAGE_HISTORY_PATH;
@@ -13,6 +15,7 @@ const OLD_HISTORY_FILE = path.join(OLD_DATA_DIR, 'usage-history.json');
 // Structure: { "YYYY-MM-DDTHH:00:00.000Z": { "claude": { "model-name": count, "_subtotal": count }, "_total": count } }
 let history = {};
 let isDirty = false;
+let isSaving = false;
 
 /**
  * Extract model family from model ID
@@ -46,13 +49,12 @@ function load() {
     try {
         // Migration logic: if old file exists and new one doesn't
         if (fs.existsSync(OLD_HISTORY_FILE) && !fs.existsSync(HISTORY_FILE)) {
-            console.log('[UsageStats] Migrating legacy usage data...');
+            logger.info('[UsageStats] Migrating legacy usage data...');
             if (!fs.existsSync(DATA_DIR)) {
                 fs.mkdirSync(DATA_DIR, { recursive: true });
             }
             fs.copyFileSync(OLD_HISTORY_FILE, HISTORY_FILE);
-            // We keep the old file for safety initially, but could delete it
-            console.log(`[UsageStats] Migration complete: ${OLD_HISTORY_FILE} -> ${HISTORY_FILE}`);
+            logger.info(`[UsageStats] Migration complete: ${OLD_HISTORY_FILE} -> ${HISTORY_FILE}`);
         }
 
         if (!fs.existsSync(DATA_DIR)) {
@@ -63,21 +65,41 @@ function load() {
             history = JSON.parse(data);
         }
     } catch (err) {
-        console.error('[UsageStats] Failed to load history:', err);
+        logger.error('[UsageStats] Failed to load history:', err);
         history = {};
     }
 }
 
 /**
- * Save history to disk
+ * Save history to disk synchronously (for process exit)
  */
-function save() {
+function saveSync() {
     if (!isDirty) return;
     try {
         fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
         isDirty = false;
     } catch (err) {
-        console.error('[UsageStats] Failed to save history:', err);
+        logger.error('[UsageStats] Failed to save history (sync):', err);
+    }
+}
+
+/**
+ * Save history to disk asynchronously (for periodic updates)
+ * Uses atomic write pattern (write tmp -> rename) to prevent corruption
+ */
+async function saveAsync() {
+    if (!isDirty || isSaving) return;
+
+    isSaving = true;
+    try {
+        const tmpFile = `${HISTORY_FILE}.tmp`;
+        await fsPromises.writeFile(tmpFile, JSON.stringify(history, null, 2));
+        await fsPromises.rename(tmpFile, HISTORY_FILE);
+        isDirty = false;
+    } catch (err) {
+        logger.error('[UsageStats] Failed to save history (async):', err);
+    } finally {
+        isSaving = false;
     }
 }
 
@@ -141,15 +163,15 @@ function track(modelId) {
 function setupMiddleware(app) {
     load();
 
-    // Auto-save every minute
+    // Auto-save every minute using async I/O
     setInterval(() => {
-        save();
+        saveAsync();
         prune();
     }, 60 * 1000);
 
-    // Save on exit
-    process.on('SIGINT', () => { save(); process.exit(); });
-    process.on('SIGTERM', () => { save(); process.exit(); });
+    // Save synchronously on exit to ensure data persistence
+    process.on('SIGINT', () => { saveSync(); process.exit(); });
+    process.on('SIGTERM', () => { saveSync(); process.exit(); });
 
     // Request interceptor
     // Track both Anthropic (/v1/messages) and OpenAI compatible (/v1/chat/completions) endpoints

@@ -175,6 +175,13 @@ export async function* sendMessageStream(anthropicRequest, accountManager, fallb
             continue;
         }
 
+        // Safety: If no account and no wait time (shouldn't happen with fixed strategy, but good defense)
+        if (!account) {
+            logger.warn('[CloudCode] No account selected and no wait time provided. Forcing 1s sleep to prevent loop.');
+            await sleep(1000);
+            continue;
+        }
+
         if (!account) {
             continue; // Shouldn't happen, but safety check
         }
