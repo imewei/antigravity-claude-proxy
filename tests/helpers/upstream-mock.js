@@ -4,11 +4,12 @@
  * Simulates the Google Cloud Code API behavior to support
  * integration tests without external dependencies.
  */
-const http = require('http');
+import http from 'node:http';
+import { fileURLToPath } from 'node:url';
 
-const PORT = 8081; // Mock upstream port
+export const PORT = 8081; // Mock upstream port
 
-function createMockServer() {
+export function createMockServer() {
     const server = http.createServer(async (req, res) => {
         // Enable CORS
         res.setHeader('Access-Control-Allow-Origin', '*');
@@ -132,11 +133,9 @@ function handleRequest(req, res, data) {
     res.end();
 }
 
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const server = createMockServer();
     server.listen(PORT, () => {
         console.log(`Mock upstream running on http://localhost:${PORT}`);
     });
 }
-
-module.exports = { createMockServer, PORT };
