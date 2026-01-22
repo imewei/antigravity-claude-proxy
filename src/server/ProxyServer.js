@@ -76,11 +76,11 @@ export class ProxyServer {
         const corsOrigin = process.env.CORS_ORIGIN ?? config.corsOrigin;
         const corsOptions = corsOrigin
             ? {
-                origin: corsOrigin
-                    .split(',')
-                    .map((value) => value.trim())
-                    .filter(Boolean)
-            }
+                  origin: corsOrigin
+                      .split(',')
+                      .map((value) => value.trim())
+                      .filter(Boolean)
+              }
             : { origin: false };
         this.app.use(cors(corsOptions));
         this.app.use(express.json({ limit: REQUEST_BODY_LIMIT }));
@@ -200,7 +200,11 @@ export class ProxyServer {
 
             this.server.on('error', (err) => {
                 if (err.code === 'EADDRINUSE') {
-                    reject(new Error(`Port ${port} is already in use. Please stop other processes or use a different port.`));
+                    reject(
+                        new Error(
+                            `Port ${port} is already in use. Please stop other processes or use a different port.`
+                        )
+                    );
                 } else {
                     reject(err);
                 }

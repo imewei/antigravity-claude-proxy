@@ -33,6 +33,7 @@ import { streamSSEResponse } from './sse-streamer.js';
 import { getFallbackModel } from '../fallback-config.js';
 import crypto from 'node:crypto';
 import { fetchWithTimeout } from './fetch-utils.js';
+import { mockMessageStream } from './mock-stream-handler.js';
 
 /**
  * Gap 1: Rate limit deduplication - prevents thundering herd on concurrent rate limits
@@ -137,6 +138,11 @@ export async function* sendMessageStream(
     fallbackEnabled = false,
     signal = null
 ) {
+    if (process.env.MOCK_UPSTREAM === 'true') {
+        yield* mockMessageStream(anthropicRequest);
+        return;
+    }
+
     const model = anthropicRequest.model;
 
     // Retry loop with account failover

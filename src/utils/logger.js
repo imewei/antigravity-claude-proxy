@@ -112,7 +112,7 @@ class Logger extends EventEmitter {
 
     /**
      * Create a child logger with specific context
-     * @param {Object} context 
+     * @param {Object} context
      * @returns {Logger} A proxy to this logger with preset context
      */
     child(context) {
@@ -122,17 +122,22 @@ class Logger extends EventEmitter {
                 // Merge into the child's closure context
                 context = { ...context, ...newContext };
             },
-            info: (msg, ...args) => this.printWithContext('INFO', COLORS.BLUE, context, msg, ...args),
-            success: (msg, ...args) => this.printWithContext('SUCCESS', COLORS.GREEN, context, msg, ...args),
-            warn: (msg, ...args) => this.printWithContext('WARN', COLORS.YELLOW, context, msg, ...args),
-            error: (msg, ...args) => this.printWithContext('ERROR', COLORS.RED, context, msg, ...args),
+            info: (msg, ...args) =>
+                this.printWithContext('INFO', COLORS.BLUE, context, msg, ...args),
+            success: (msg, ...args) =>
+                this.printWithContext('SUCCESS', COLORS.GREEN, context, msg, ...args),
+            warn: (msg, ...args) =>
+                this.printWithContext('WARN', COLORS.YELLOW, context, msg, ...args),
+            error: (msg, ...args) =>
+                this.printWithContext('ERROR', COLORS.RED, context, msg, ...args),
             debug: (msg, ...args) => {
                 if (this.isDebugEnabled) {
                     this.printWithContext('DEBUG', COLORS.MAGENTA, context, msg, ...args);
                 }
             },
             log: (msg, ...args) => console.log(msg, ...args),
-            header: (title) => console.log(`\n${COLORS.BRIGHT}${COLORS.CYAN}=== ${title} ===${COLORS.RESET}\n`)
+            header: (title) =>
+                console.log(`\n${COLORS.BRIGHT}${COLORS.CYAN}=== ${title} ===${COLORS.RESET}\n`)
         };
     }
 

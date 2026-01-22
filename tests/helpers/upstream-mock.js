@@ -63,7 +63,10 @@ function handleRequest(req, res, data) {
     const contentParts = lastMsg.parts || [];
 
     // Extract text content for pattern matching triggers
-    const textParts = contentParts.filter(p => p.text).map(p => p.text).join(' ');
+    const textParts = contentParts
+        .filter((p) => p.text)
+        .map((p) => p.text)
+        .join(' ');
     const content = textParts || '';
 
     // Simulate 429 for Recursive Fallback Test
@@ -99,18 +102,24 @@ function handleRequest(req, res, data) {
     // Check system prompt for caching trigger too (test-caching-streaming.cjs uses system prompt)
     // Google format uses 'system_instruction' object with parts
     const systemInstruction = reqData.system_instruction || {};
-    const systemParts = (systemInstruction.parts || []).filter(p => p.text).map(p => p.text).join(' ');
+    const systemParts = (systemInstruction.parts || [])
+        .filter((p) => p.text)
+        .map((p) => p.text)
+        .join(' ');
     const systemPrompt = systemParts || '';
 
-    if (content.includes('cache') || content.includes('system') || content.length > 500 || systemPrompt.length > 500) {
+    if (
+        content.includes('cache') ||
+        content.includes('system') ||
+        content.length > 500 ||
+        systemPrompt.length > 500
+    ) {
         cachedTokens = 200;
     }
 
     // Simulate Image Input
     // Check if any message part has 'inlineData' or 'fileData' (Google format)
-    const hasImage = contents.some(m =>
-        (m.parts || []).some(p => p.inlineData || p.fileData)
-    );
+    const hasImage = contents.some((m) => (m.parts || []).some((p) => p.inlineData || p.fileData));
 
     // Simulate Thinking/Signatures if requested
     const isThinking = model.includes('thinking') || model.includes('gemini');
@@ -128,9 +137,12 @@ function handleRequest(req, res, data) {
     }
 
     // Check for multi-turn weather message or tool results
-    const lastUserMsg = contents.filter(m => m.role === 'user').pop();
+    const lastUserMsg = contents.filter((m) => m.role === 'user').pop();
     // Check if the last part is a functionResponse (tool result)
-    const hasToolResult = lastUserMsg && Array.isArray(lastUserMsg.parts) && lastUserMsg.parts.some(c => c.functionResponse || c.tool_result);
+    const hasToolResult =
+        lastUserMsg &&
+        Array.isArray(lastUserMsg.parts) &&
+        lastUserMsg.parts.some((c) => c.functionResponse || c.tool_result);
 
     if (content.includes('weather') && !hasToolResult) {
         // Return tool call
@@ -175,7 +187,7 @@ function handleRequest(req, res, data) {
         });
     } else if (hasToolResult) {
         // Check what the tool result was
-        const toolResults = lastUserMsg.parts.filter(c => c.functionResponse || c.tool_result);
+        const toolResults = lastUserMsg.parts.filter((c) => c.functionResponse || c.tool_result);
         const resultText = JSON.stringify(toolResults);
 
         if (resultText.includes('Found files')) {

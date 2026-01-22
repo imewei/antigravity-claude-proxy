@@ -205,8 +205,8 @@ export function createAnthropicRouter({
                     const contentTypes = Array.isArray(msg.content)
                         ? msg.content.map((c) => c.type || 'text').join(', ')
                         : typeof msg.content === 'string'
-                            ? 'text'
-                            : 'unknown';
+                          ? 'text'
+                          : 'unknown';
                     reqLogger.debug(`  [${i}] ${msg.role}: ${contentTypes}`);
                 });
             }
@@ -229,7 +229,9 @@ export function createAnthropicRouter({
                 // Handle client disconnection
                 req.on('close', () => {
                     if (!res.writableEnded) {
-                        reqLogger.info(`[API] Client disconnected during stream (model: ${modelId})`);
+                        reqLogger.info(
+                            `[API] Client disconnected during stream (model: ${modelId})`
+                        );
                         controller.abort();
                     }
                 });
@@ -261,7 +263,9 @@ export function createAnthropicRouter({
 
                     // Handle EPIPE/ECONNRESET (client closed connection while writing)
                     if (streamError.code === 'EPIPE' || streamError.code === 'ECONNRESET') {
-                        reqLogger.info('[API] Stream connection closed by client (EPIPE/ECONNRESET)');
+                        reqLogger.info(
+                            '[API] Stream connection closed by client (EPIPE/ECONNRESET)'
+                        );
                         res.end();
                         return;
                     }

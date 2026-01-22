@@ -369,6 +369,7 @@ While most users can use the default settings, you can tune the proxy behavior v
 - **CORS**: Set `corsOrigin` (comma-separated) in config or `CORS_ORIGIN` env var (default: no CORS).
 
 **Auth Precedence**:
+
 - `/v1/*` is protected by `API_KEY` when set.
 - WebUI password protects `/api/*`, `/account-limits`, `/health`, and `/refresh-token`.
 - `/refresh-token` requires the WebUI password even if `API_KEY` is set.
@@ -422,6 +423,20 @@ npm test
 # Fast suite (skips recursive fallback)
 npm run test:fast
 ```
+
+### Mock Mode (No Credentials Required)
+
+If you don't have valid Google credentials, you can run tests using the built-in mock mode:
+
+```bash
+# Start server in mock mode
+export MOCK_UPSTREAM=true
+npm start
+
+# Run tests
+npm test
+```
+
 
 Individual tests:
 

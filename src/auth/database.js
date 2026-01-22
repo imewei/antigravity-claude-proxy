@@ -70,9 +70,9 @@ function loadDatabaseModule() {
             } else {
                 moduleLoadError = new NativeModuleError(
                     'Failed to auto-rebuild native module. Please run manually:\n' +
-                    '  npm rebuild better-sqlite3\n' +
-                    'Or if using npx, find the package location in the error and run:\n' +
-                    '  cd /path/to/better-sqlite3 && npm rebuild',
+                        '  npm rebuild better-sqlite3\n' +
+                        'Or if using npx, find the package location in the error and run:\n' +
+                        '  cd /path/to/better-sqlite3 && npm rebuild',
                     false, // rebuildSucceeded
                     false // restartRequired
                 );
@@ -170,7 +170,7 @@ export function getAuthStatus(dbPath = ANTIGRAVITY_DB_PATH) {
         if (error.code === 'SQLITE_CANTOPEN') {
             throw new Error(
                 `Database not found at ${dbPath}. ` +
-                'Make sure Antigravity is installed and you are logged in.'
+                    'Make sure Antigravity is installed and you are logged in.'
             );
         }
         // Re-throw with context if not already our error
@@ -183,7 +183,7 @@ export function getAuthStatus(dbPath = ANTIGRAVITY_DB_PATH) {
         }
         throw new Error(`Failed to read Antigravity database: ${error.message}`);
     }
-    // Note: Connection is kept open for reuse. 
+    // Note: Connection is kept open for reuse.
     // It should be closed via closeDatabase() on server shutdown if needed.
 }
 
