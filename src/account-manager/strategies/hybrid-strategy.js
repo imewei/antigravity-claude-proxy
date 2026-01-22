@@ -18,7 +18,7 @@
 import { BaseStrategy } from './base-strategy.js';
 import { HealthTracker, TokenBucketTracker, QuotaTracker } from './trackers/index.js';
 import { logger } from '../../utils/logger.js';
-import { DEFAULT_COOLDOWN_MS, EXTENDED_COOLDOWN_MS } from '../../constants.js';
+import { DEFAULT_COOLDOWN_MS } from '../../constants.js';
 
 // Default weights for scoring
 const DEFAULT_WEIGHTS = {
@@ -101,7 +101,7 @@ export class HybridStrategy extends BaseStrategy {
     /**
      * Called after a successful request
      */
-    onSuccess(account, modelId) {
+    onSuccess(account, _modelId) {
         if (account && account.email) {
             this.#healthTracker.recordSuccess(account.email);
         }
@@ -110,7 +110,7 @@ export class HybridStrategy extends BaseStrategy {
     /**
      * Called when a request is rate-limited
      */
-    onRateLimit(account, modelId) {
+    onRateLimit(account, _modelId) {
         if (account && account.email) {
             this.#healthTracker.recordRateLimit(account.email);
         }
@@ -119,7 +119,7 @@ export class HybridStrategy extends BaseStrategy {
     /**
      * Called when a request fails
      */
-    onFailure(account, modelId) {
+    onFailure(account, _modelId) {
         if (account && account.email) {
             this.#healthTracker.recordFailure(account.email);
             // Refund the token since the request didn't complete

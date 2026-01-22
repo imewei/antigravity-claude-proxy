@@ -34,34 +34,34 @@ export class BaseStrategy {
      * @param {Function} [options.onSave] - Callback to save changes
      * @returns {SelectionResult} The selected account and index
      */
-    selectAccount(accounts, modelId, options = {}) {
+    async selectAccount(_accounts, _modelId, _options = {}) {
         throw new Error('selectAccount must be implemented by subclass');
     }
 
     /**
      * Called after a successful request
-     * @param {Object} account - The account that was used
-     * @param {string} modelId - The model ID that was used
+     * @param {Object} _account - The account that was used
+     * @param {string} _modelId - The model ID that was used
      */
-    onSuccess(account, modelId) {
+    onSuccess(_account, _modelId) {
         // Default: no-op, override in subclass if needed
     }
 
     /**
      * Called when a request is rate-limited
-     * @param {Object} account - The account that was rate-limited
-     * @param {string} modelId - The model ID that was rate-limited
+     * @param {Object} _account - The account that was rate-limited
+     * @param {string} _modelId - The model ID that was rate-limited
      */
-    onRateLimit(account, modelId) {
+    onRateLimit(_account, _modelId) {
         // Default: no-op, override in subclass if needed
     }
 
     /**
      * Called when a request fails (non-rate-limit error)
-     * @param {Object} account - The account that failed
-     * @param {string} modelId - The model ID that failed
+     * @param {Object} _account - The account that failed
+     * @param {string} _modelId - The model ID that failed
      */
-    onFailure(account, modelId) {
+    onFailure(_account, _modelId) {
         // Default: no-op, override in subclass if needed
     }
 

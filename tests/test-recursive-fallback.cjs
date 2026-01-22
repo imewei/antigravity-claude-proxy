@@ -2,77 +2,116 @@
  * Test for Recursive Fallback Mechanism
  * 
  * Verifies chained fallback logic (Lite -> Flash -> Pro) 
- * and specific error handling triggers.
+ * by mocking upstream API responses.
  */
 
-const { streamRequest } = require('./helpers/http-client.cjs');
-const { getModels } = require('./helpers/test-models.cjs');
-
 async function testRecursiveFallback() {
-    const TEST_MODELS = await getModels();
-
-    // We'll define the chain manually for the test output verification
-    // Actual implementation relies on server-side constants
-    const FALLBACK_CHAIN = [
-        'gemini-2.5-flash-lite',
-        'gemini-2.5-flash',
-        'gemini-2.5-pro'
-    ];
-
     console.log('\n============================================================');
     console.log('RECURSIVE FALLBACK TEST');
     console.log('Tests chained model fallback logic');
     console.log('============================================================\n');
 
     try {
-        console.log('TEST 1: Import check & configuration verification');
+        // Mock global fetch
+        const originalFetch = global.fetch;
+        let fetchCalls = [];
+
+        global.fetch = async (url, options) => {
+            const body = JSON.parse(options.body);
+            const model = body.model;
+            fetchCalls.push(model);
+
+            console.log(`  [MOCK] Fetch called for model: ${model}`);
+
+            // Simulate 429 for Lite and Flash
+            if (model.includes('flash-lite') || model === 'gemini-2.5-flash') {
+                return {
+                    ok: false,
+                    status: 429,
+                    text: async () => 'Resource exhausted: model info: model_capacity_exhausted',
+                    json: async () => ({ error: { message: 'Capacity exhausted' } })
+                };
+            }
+
+            // Success for Pro
+            if (model.includes('pro')) {
+                const stream = new ReadableStream({
+                    start(controller) {
+                        const data = JSON.stringify({
+                            candidates: [{ content: { parts: [{ text: 'Success' }] } }]
+                        });
+                        controller.enqueue(new TextEncoder().encode(`data: ${data}\n\n`));
+                        controller.close();
+                    }
+                });
+                return {
+                    ok: true,
+                    body: stream
+                };
+            }
+
+            return { ok: false, status: 500, text: async () => 'Unknown model' };
+        };
+
+        const { sendMessageStream } = await import('../src/cloudcode/streaming-handler.js');
+
+        // Mock AccountManager
+        const mockAccountManager = {
+            getAvailableAccounts: () => [{ email: 'test@example.com' }],
+            getAccountCount: () => 1,
+            selectAccount: () => ({ account: { email: 'test@example.com' }, waitMs: 0 }),
+            getTokenForAccount: async () => 'fake-token',
+            getProjectForAccount: async () => 'fake-project',
+            clearExpiredLimits: () => { },
+            isAllRateLimited: () => false,
+            notifyFailure: () => { },
+            notifySuccess: () => { },
+            getHealthTracker: () => ({ getConsecutiveFailures: () => 0 }),
+            markRateLimited: () => { }
+        };
+
+        console.log('TEST 1: Verify Fallback Chain');
         console.log('----------------------------------------');
 
-        // Dynamic import to check server-side constants
-        const constants = await import('../src/constants.js');
-        const fallbackMap = constants.MODEL_FALLBACK_MAP;
+        const request = {
+            model: 'gemini-2.5-flash-lite',
+            messages: [{ role: 'user', content: 'hi' }]
+        };
 
-        console.log('  Checking fallback chain configuration:');
-        console.log(`  gemini-2.5-flash-lite -> ${fallbackMap['gemini-2.5-flash-lite']}`);
-        console.log(`  gemini-2.5-flash      -> ${fallbackMap['gemini-2.5-flash']}`);
+        console.log('  Triggering stream request...');
+        const generator = sendMessageStream(request, mockAccountManager, true); // fallbackEnabled=true
 
-        if (fallbackMap['gemini-2.5-flash-lite'] === 'gemini-2.5-flash' &&
-            fallbackMap['gemini-2.5-flash'] === 'gemini-2.5-pro') {
-            console.log('  ✓ Fallback chain configured correctly');
+        for await (const chunk of generator) {
+            // Consume stream
+        }
+
+        console.log('  Verifying fetch sequence:');
+        console.log(`  Sequence: ${fetchCalls.join(' -> ')}`);
+
+        const expectedChain = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro'];
+        const passed = fetchCalls.length === 3 &&
+            fetchCalls[0] === expectedChain[0] &&
+            fetchCalls[1] === expectedChain[1] &&
+            fetchCalls[2] === expectedChain[2];
+
+        if (passed) {
+            console.log('  ✓ Fallback chain executed correctly');
         } else {
-            console.log('  ✗ Fallback chain misconfigured');
+            console.log('  ✗ Fallback chain failed');
+            console.log(`    Expected: ${expectedChain.join(' -> ')}`);
+            console.log(`    Actual:   ${fetchCalls.join(' -> ')}`);
             return false;
         }
 
         console.log('  Result: PASS\n');
 
-        console.log('TEST 2: Verify "No capacity available" detection');
-        console.log('----------------------------------------');
-
-        const streamingHandler = await import('../src/cloudcode/streaming-handler.js');
-        // We can't easily export internal functions, so we'll rely on integration tests
-        // or check if we can simulate a response that triggers it.
-        // For this external test script, we verify the endpoint behavior by creating a mock
-        // or relying on the file inspection we did earlier.
-
-        // Since we can't unit test internal functions from this CJS test runner against ESM source easily without rewiring,
-        // we'll focus on the integration aspect:
-        // Does requesting a non-existent model (if we could force it) trigger fallback?
-        // Actually, we can check if the server is running and we can hit the endpoint.
-
-        // Challenge: We can't force the *upstream* API to return 429 "No capacity".
-        // However, we verified the regex in the code updates.
-        // This test will serve as a configuration guard.
-
-        console.log('  Manual verification required for actual 429 triggering.');
-        console.log('  Configuration is correct, enabling recursive fallback.');
-        console.log('  Result: PASS\n');
+        // Restore fetch
+        global.fetch = originalFetch;
 
         console.log('============================================================');
         console.log('SUMMARY');
         console.log('============================================================');
-        console.log('  [PASS] Fallback chain configuration valid');
-        console.log('  [PASS] Logic enables Lite -> Flash -> Pro');
+        console.log('  [PASS] Mocked API confirmed fallback logic');
         console.log('\n============================================================');
         console.log('[RECURSIVE FALLBACK] ALL TESTS PASSED');
         console.log('============================================================\n');
