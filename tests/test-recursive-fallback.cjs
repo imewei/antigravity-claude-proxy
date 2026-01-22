@@ -62,13 +62,13 @@ async function testRecursiveFallback() {
             selectAccount: () => ({ account: { email: 'test@example.com' }, waitMs: 0 }),
             getTokenForAccount: async () => 'fake-token',
             getProjectForAccount: async () => 'fake-project',
-            clearExpiredLimits: () => { },
+            clearExpiredLimits: () => {},
             isAllRateLimited: () => false,
-            notifyFailure: () => { },
-            notifySuccess: () => { },
+            notifyFailure: () => {},
+            notifySuccess: () => {},
             getHealthTracker: () => ({ getConsecutiveFailures: () => 0 }),
-            markRateLimited: () => { },
-            notifyRateLimit: () => { }
+            markRateLimited: () => {},
+            notifyRateLimit: () => {}
         };
 
         console.log('TEST 1: Verify Fallback Chain');
@@ -91,7 +91,9 @@ async function testRecursiveFallback() {
         console.log(`  Sequence: ${fetchCalls.join(' -> ')}`);
 
         // Deduplicate adjacent identical models to handle internal retries
-        const uniqueSequence = fetchCalls.filter((model, index, arr) => index === 0 || model !== arr[index - 1]);
+        const uniqueSequence = fetchCalls.filter(
+            (model, index, arr) => index === 0 || model !== arr[index - 1]
+        );
         const expectedChain = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro'];
 
         const passed =

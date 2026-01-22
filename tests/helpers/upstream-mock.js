@@ -51,13 +51,15 @@ function handleRequest(req, res, data) {
     // Simulate 429 for Recursive Fallback Test
     if (model.includes('flash-lite') || model === 'gemini-2.5-flash') {
         res.writeHead(429, { 'Content-Type': 'application/json' });
-        res.write(JSON.stringify({
-            error: {
-                message: 'Resource exhausted: model info: model_capacity_exhausted',
-                code: 429,
-                status: 'RESOURCE_EXHAUSTED'
-            }
-        }));
+        res.write(
+            JSON.stringify({
+                error: {
+                    message: 'Resource exhausted: model info: model_capacity_exhausted',
+                    code: 429,
+                    status: 'RESOURCE_EXHAUSTED'
+                }
+            })
+        );
         res.end();
         return;
     }
@@ -66,7 +68,7 @@ function handleRequest(req, res, data) {
     res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive'
+        Connection: 'keep-alive'
     });
 
     // Helper to send SSE event
@@ -86,7 +88,7 @@ function handleRequest(req, res, data) {
         const signature = 's'.repeat(60); // Must be > 50 chars
         parts.push({
             thought: true,
-            text: "I am thinking about the weather...",
+            text: 'I am thinking about the weather...',
             thoughtSignature: signature
         });
     }
@@ -108,7 +110,7 @@ function handleRequest(req, res, data) {
         });
     } else {
         parts.push({
-            text: "Here is the response from the mock upstream."
+            text: 'Here is the response from the mock upstream.'
         });
     }
 
@@ -116,7 +118,7 @@ function handleRequest(req, res, data) {
         candidates: [
             {
                 content: { parts },
-                finishReason: parts.some(p => p.functionCall) ? "STOP" : "STOP",
+                finishReason: parts.some((p) => p.functionCall) ? 'STOP' : 'STOP',
                 usageMetadata: {
                     promptTokenCount: 10,
                     candidatesTokenCount: 10,
