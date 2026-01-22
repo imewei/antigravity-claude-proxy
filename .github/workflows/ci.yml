@@ -62,8 +62,11 @@ jobs:
               env:
                   ACCOUNT_CONFIG_PATH: tests/fixtures/ci-accounts.json
                   ANTHROPIC_BASE_URL: http://localhost:8080
-                  ANTHROPIC_API_KEY: dummy
+                  ANTHROPIC_API_KEY: test
+                  ANTIGRAVITY_UPSTREAM_URL: http://127.0.0.1:8081
               run: |
+                  node tests/helpers/upstream-mock.js &
+                  npx wait-on http://127.0.0.1:8081
                   npm start &
-                  npx wait-on http://localhost:8080 -t 30000
+                  npx wait-on http://127.0.0.1:8080/health
                   npm test

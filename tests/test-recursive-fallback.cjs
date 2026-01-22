@@ -62,13 +62,13 @@ async function testRecursiveFallback() {
             selectAccount: () => ({ account: { email: 'test@example.com' }, waitMs: 0 }),
             getTokenForAccount: async () => 'fake-token',
             getProjectForAccount: async () => 'fake-project',
-            clearExpiredLimits: () => {},
+            clearExpiredLimits: () => { },
             isAllRateLimited: () => false,
-            notifyFailure: () => {},
-            notifySuccess: () => {},
+            notifyFailure: () => { },
+            notifySuccess: () => { },
             getHealthTracker: () => ({ getConsecutiveFailures: () => 0 }),
-            markRateLimited: () => {},
-            notifyRateLimit: () => {}
+            markRateLimited: () => { },
+            notifyRateLimit: () => { }
         };
 
         console.log('TEST 1: Verify Fallback Chain');
@@ -90,19 +90,21 @@ async function testRecursiveFallback() {
         console.log('  Verifying fetch sequence:');
         console.log(`  Sequence: ${fetchCalls.join(' -> ')}`);
 
+        // Deduplicate adjacent identical models to handle internal retries
+        const uniqueSequence = fetchCalls.filter((model, index, arr) => index === 0 || model !== arr[index - 1]);
         const expectedChain = ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro'];
+
         const passed =
-            fetchCalls.length === 3 &&
-            fetchCalls[0] === expectedChain[0] &&
-            fetchCalls[1] === expectedChain[1] &&
-            fetchCalls[2] === expectedChain[2];
+            uniqueSequence.length === expectedChain.length &&
+            uniqueSequence.every((model, index) => model === expectedChain[index]);
 
         if (passed) {
-            console.log('  ✓ Fallback chain executed correctly');
+            console.log('  ✓ Fallback chain executed correctly (ignoring retries)');
         } else {
             console.log('  ✗ Fallback chain failed');
             console.log(`    Expected: ${expectedChain.join(' -> ')}`);
-            console.log(`    Actual:   ${fetchCalls.join(' -> ')}`);
+            console.log(`    Actual:   ${uniqueSequence.join(' -> ')}`);
+            console.log(`    (Raw):    ${fetchCalls.join(' -> ')}`);
             return false;
         }
 

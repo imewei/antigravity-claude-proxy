@@ -43,11 +43,10 @@ function getPlatformUserAgent() {
 const ANTIGRAVITY_ENDPOINT_DAILY = 'https://daily-cloudcode-pa.googleapis.com';
 const ANTIGRAVITY_ENDPOINT_PROD = 'https://cloudcode-pa.googleapis.com';
 
-// Endpoint fallback order (daily → prod)
-export const ANTIGRAVITY_ENDPOINT_FALLBACKS = [
-    ANTIGRAVITY_ENDPOINT_DAILY,
-    ANTIGRAVITY_ENDPOINT_PROD
-];
+// Endpoint fallback order (daily → prod) or override via env
+export const ANTIGRAVITY_ENDPOINT_FALLBACKS = process.env.ANTIGRAVITY_UPSTREAM_URL
+    ? [process.env.ANTIGRAVITY_UPSTREAM_URL]
+    : [ANTIGRAVITY_ENDPOINT_DAILY, ANTIGRAVITY_ENDPOINT_PROD];
 
 // Required headers for Antigravity API requests
 export const ANTIGRAVITY_HEADERS = {
