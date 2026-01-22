@@ -200,7 +200,9 @@ export const MODEL_FALLBACK_MAP = {
     'gemini-3-flash': 'claude-sonnet-4-5-thinking',
     'claude-opus-4-5-thinking': 'gemini-3-pro-high',
     'claude-sonnet-4-5-thinking': 'gemini-3-flash',
-    'claude-sonnet-4-5': 'gemini-3-flash'
+    'claude-sonnet-4-5': 'gemini-3-flash',
+    'gemini-2.5-flash-lite': 'gemini-2.5-flash',
+    'gemini-2.5-flash': 'gemini-2.5-pro'
 };
 
 // Default test models for each family (used by test suite)

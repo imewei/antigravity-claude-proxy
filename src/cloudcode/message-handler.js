@@ -92,7 +92,8 @@ function isModelCapacityExhausted(errorText) {
     return lower.includes('model_capacity_exhausted') ||
         lower.includes('capacity_exhausted') ||
         lower.includes('model is currently overloaded') ||
-        lower.includes('service temporarily unavailable');
+        lower.includes('service temporarily unavailable') ||
+        lower.includes('no capacity available');
 }
 
 // Periodically clean up stale dedup timestamps (every 60 seconds)
@@ -147,7 +148,8 @@ export async function sendMessage(anthropicRequest, accountManager, fallbackEnab
                         if (fallbackModel) {
                             logger.warn(`[CloudCode] All accounts exhausted for ${model} (${formatDuration(minWaitMs)} wait). Attempting fallback to ${fallbackModel}`);
                             const fallbackRequest = { ...anthropicRequest, model: fallbackModel };
-                            return await sendMessage(fallbackRequest, accountManager, false);
+                            // Pass fallbackEnabled to allow chaining
+                            return await sendMessage(fallbackRequest, accountManager, fallbackEnabled);
                         }
                     }
                     throw new Error(
@@ -387,7 +389,8 @@ export async function sendMessage(anthropicRequest, accountManager, fallbackEnab
         if (fallbackModel) {
             logger.warn(`[CloudCode] All retries exhausted for ${model}. Attempting fallback to ${fallbackModel}`);
             const fallbackRequest = { ...anthropicRequest, model: fallbackModel };
-            return await sendMessage(fallbackRequest, accountManager, false);
+            // Pass fallbackEnabled to allow chaining
+            return await sendMessage(fallbackRequest, accountManager, fallbackEnabled);
         }
     }
 
