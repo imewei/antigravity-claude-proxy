@@ -366,7 +366,12 @@ While most users can use the default settings, you can tune the proxy behavior v
 - **Persistence**: Enable `persistTokenCache` to save OAuth sessions across restarts.
 - **Max Accounts**: Set `maxAccounts` (1-100) to limit the number of Google accounts. Default: 10.
 - **Request Timeout**: Set `requestTimeoutMs` to bound upstream request time (default: 300000).
-- **CORS**: Set `CORS_ORIGIN` env var to a comma-separated allowlist (default: no CORS).
+- **CORS**: Set `corsOrigin` (comma-separated) in config or `CORS_ORIGIN` env var (default: no CORS).
+
+**Auth Precedence**:
+- `/v1/*` is protected by `API_KEY` when set.
+- WebUI password protects `/api/*`, `/account-limits`, `/health`, and `/refresh-token`.
+- `/refresh-token` requires the WebUI password even if `API_KEY` is set.
 
 Refer to `config.example.json` for a complete list of fields and documentation.
 
@@ -413,6 +418,9 @@ npm start
 
 # Run tests in another terminal
 npm test
+
+# Fast suite (skips recursive fallback)
+npm run test:fast
 ```
 
 Individual tests:

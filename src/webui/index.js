@@ -346,6 +346,7 @@ export function mountWebUI(app, dirname, accountManager) {
                 defaultCooldownMs,
                 maxWaitBeforeErrorMs,
                 maxAccounts,
+                corsOrigin,
                 accountSelection
             } = req.body;
 
@@ -383,6 +384,9 @@ export function mountWebUI(app, dirname, accountManager) {
             }
             if (typeof maxAccounts === 'number' && maxAccounts >= 1 && maxAccounts <= 100) {
                 updates.maxAccounts = maxAccounts;
+            }
+            if (typeof corsOrigin === 'string') {
+                updates.corsOrigin = corsOrigin;
             }
             // Account selection strategy validation
             if (accountSelection && typeof accountSelection === 'object') {

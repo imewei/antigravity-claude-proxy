@@ -15,6 +15,7 @@ const DEFAULT_CONFIG = {
     persistTokenCache: false,
     defaultCooldownMs: 10000, // 10 seconds
     maxWaitBeforeErrorMs: 120000, // 2 minutes
+    corsOrigin: '',
     requestTimeoutMs: 300000, // 5 minutes
     maxAccounts: 10, // Maximum number of accounts allowed
     modelMapping: {},
@@ -83,6 +84,7 @@ function loadConfig() {
         // Environment overrides
         if (process.env.API_KEY) config.apiKey = process.env.API_KEY;
         if (process.env.WEBUI_PASSWORD) config.webuiPassword = process.env.WEBUI_PASSWORD;
+        if (process.env.CORS_ORIGIN) config.corsOrigin = process.env.CORS_ORIGIN;
         if (process.env.DEBUG === 'true') config.debug = true;
         if (process.env.ACCOUNT_CONFIG_PATH)
             config.accountConfigPath = process.env.ACCOUNT_CONFIG_PATH;

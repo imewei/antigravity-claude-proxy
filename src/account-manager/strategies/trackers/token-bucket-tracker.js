@@ -41,8 +41,8 @@ export class TokenBucketTracker {
         const minutesElapsed = (now - bucket.lastUpdated) / (1000 * 60);
         const regenerated = minutesElapsed * this.#config.tokensPerMinute;
         const currentTokens = Math.min(this.#config.maxTokens, bucket.tokens + regenerated);
-
-        return currentTokens;
+        // Return whole tokens to keep selection logic and tests deterministic.
+        return Math.floor(currentTokens);
     }
 
     /**

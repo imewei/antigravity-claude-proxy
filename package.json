@@ -24,6 +24,7 @@
         "accounts:remove": "node src/cli/accounts.js remove",
         "accounts:verify": "node src/cli/accounts.js verify",
         "test": "node tests/run-all.cjs",
+        "test:fast": "node tests/test-strategies.cjs && node tests/test-thinking-signatures.cjs && node tests/test-multiturn-thinking-tools.cjs && node tests/test-multiturn-thinking-tools-streaming.cjs && node tests/test-interleaved-thinking.cjs && node tests/test-images.cjs && node tests/test-caching-streaming.cjs && node tests/test-cross-model-thinking.cjs && node tests/test-oauth-no-browser.cjs && node tests/test-empty-response-retry.cjs && node tests/test-schema-sanitizer.cjs && node tests/test-streaming-whitespace.cjs",
         "test:integration": "./scripts/test-integration.sh",
         "test:signatures": "node tests/test-thinking-signatures.cjs",
         "test:multiturn": "node tests/test-multiturn-thinking-tools.cjs",
