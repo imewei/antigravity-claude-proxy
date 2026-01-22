@@ -45,6 +45,14 @@ export function isNetworkError(error) {
         msg.includes('econnreset') ||
         msg.includes('etimedout') ||
         msg.includes('socket hang up') ||
-        msg.includes('timeout')
+        msg.includes('timeout') ||
+        msg.includes('500') ||
+        msg.includes('502') ||
+        msg.includes('503') ||
+        msg.includes('504') ||
+        msg.includes('internal server error') ||
+        msg.includes('bad gateway') ||
+        msg.includes('service unavailable') ||
+        msg.includes('gateway timeout')
     );
 }
