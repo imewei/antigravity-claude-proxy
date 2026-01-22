@@ -66,7 +66,12 @@ function parseError(error) {
  * @param {boolean} context.fallbackEnabled - Whether fallback is enabled
  * @returns {Router} Express router
  */
-export function createAnthropicRouter({ accountManager, ensureInitialized, fallbackEnabled }) {
+export function createAnthropicRouter({
+    accountManager,
+    ensureInitialized,
+    fallbackEnabled,
+    registerStream
+}) {
     const router = Router();
 
     /**
@@ -88,6 +93,9 @@ export function createAnthropicRouter({ accountManager, ensureInitialized, fallb
      * POST /v1/messages
      */
     router.post('/messages', async (req, res) => {
+        const requestId = `req_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 5)}`;
+        const reqLogger = logger.child({ requestId });
+
         try {
             // Ensure account manager is initialized
             await ensureInitialized();
@@ -111,15 +119,17 @@ export function createAnthropicRouter({ accountManager, ensureInitialized, fallb
             const modelMapping = config.modelMapping || {};
             if (modelMapping[requestedModel] && modelMapping[requestedModel].mapping) {
                 const targetModel = modelMapping[requestedModel].mapping;
-                logger.info(`[Server] Mapping model ${requestedModel} -> ${targetModel}`);
+                reqLogger.info(`[Server] Mapping model ${requestedModel} -> ${targetModel}`);
                 requestedModel = targetModel;
             }
 
             const modelId = requestedModel;
+            // Update logger context with resolved model
+            reqLogger.setContext({ model: modelId });
 
             // Optimistic Retry: If ALL accounts are rate-limited for this model, reset them to force a fresh check.
             if (accountManager.isAllRateLimited(modelId)) {
-                logger.warn(
+                reqLogger.warn(
                     `[Server] All accounts rate-limited for ${modelId}. Resetting state for optimistic retry.`
                 );
                 accountManager.resetAllRateLimits();
@@ -151,21 +161,22 @@ export function createAnthropicRouter({ accountManager, ensureInitialized, fallb
                 temperature
             };
 
-            logger.info(`[API] Request for model: ${request.model}, stream: ${!!stream}`);
+            reqLogger.info(`[API] Request for model: ${request.model}, stream: ${!!stream}`);
 
             if (logger.isDebugEnabled) {
-                logger.debug('[API] Message structure:');
+                reqLogger.debug('[API] Message structure:');
                 messages.forEach((msg, i) => {
                     const contentTypes = Array.isArray(msg.content)
                         ? msg.content.map((c) => c.type || 'text').join(', ')
                         : typeof msg.content === 'string'
-                          ? 'text'
-                          : 'unknown';
-                    logger.debug(`  [${i}] ${msg.role}: ${contentTypes}`);
+                            ? 'text'
+                            : 'unknown';
+                    reqLogger.debug(`  [${i}] ${msg.role}: ${contentTypes}`);
                 });
             }
 
             if (stream) {
+                if (registerStream) registerStream(res);
                 // Handle streaming response
                 res.setHeader('Content-Type', 'text/event-stream');
                 res.setHeader('Cache-Control', 'no-cache');
@@ -182,7 +193,7 @@ export function createAnthropicRouter({ accountManager, ensureInitialized, fallb
                 // Handle client disconnection
                 req.on('close', () => {
                     if (!res.writableEnded) {
-                        logger.info(`[API] Client disconnected during stream (model: ${modelId})`);
+                        reqLogger.info(`[API] Client disconnected during stream (model: ${modelId})`);
                         controller.abort();
                     }
                 });
@@ -207,19 +218,19 @@ export function createAnthropicRouter({ accountManager, ensureInitialized, fallb
                         streamError.name === 'AbortError' ||
                         streamError.message.includes('aborted')
                     ) {
-                        logger.info('[API] Stream aborted by client');
+                        reqLogger.info('[API] Stream aborted by client');
                         res.end();
                         return;
                     }
 
                     // Handle EPIPE/ECONNRESET (client closed connection while writing)
                     if (streamError.code === 'EPIPE' || streamError.code === 'ECONNRESET') {
-                        logger.info('[API] Stream connection closed by client (EPIPE/ECONNRESET)');
+                        reqLogger.info('[API] Stream connection closed by client (EPIPE/ECONNRESET)');
                         res.end();
                         return;
                     }
 
-                    logger.error('[API] Stream error:', streamError);
+                    reqLogger.error('[API] Stream error:', streamError);
 
                     const { errorType, statusCode, errorMessage } = parseError(streamError);
 
@@ -246,7 +257,7 @@ export function createAnthropicRouter({ accountManager, ensureInitialized, fallb
                 res.json(response);
             }
         } catch (error) {
-            logger.error('[API] Error handling message request:', error);
+            reqLogger.error('[API] Error handling message request:', error);
             const { errorType, statusCode, errorMessage } = parseError(error);
             res.status(statusCode).json({
                 type: 'error',

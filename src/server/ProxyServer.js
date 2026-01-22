@@ -30,6 +30,7 @@ export class ProxyServer {
         this.server = null;
         this.isInitialized = false;
         this.initPromise = null;
+        this.activeStreams = new Set();
     }
 
     /**
@@ -75,11 +76,11 @@ export class ProxyServer {
         const corsOrigin = process.env.CORS_ORIGIN ?? config.corsOrigin;
         const corsOptions = corsOrigin
             ? {
-                  origin: corsOrigin
-                      .split(',')
-                      .map((value) => value.trim())
-                      .filter(Boolean)
-              }
+                origin: corsOrigin
+                    .split(',')
+                    .map((value) => value.trim())
+                    .filter(Boolean)
+            }
             : { origin: false };
         this.app.use(cors(corsOptions));
         this.app.use(express.json({ limit: REQUEST_BODY_LIMIT }));
@@ -111,7 +112,8 @@ export class ProxyServer {
         const context = {
             accountManager: this.accountManager,
             ensureInitialized: this.ensureInitialized.bind(this),
-            fallbackEnabled
+            fallbackEnabled,
+            registerStream: this._registerStream.bind(this)
         };
 
         this.app.use('/health', createHealthRouter(context));
@@ -191,9 +193,17 @@ export class ProxyServer {
      * @param {number} port - Port to listen on
      */
     start(port) {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             this.server = this.app.listen(port, () => {
                 resolve(this.server);
+            });
+
+            this.server.on('error', (err) => {
+                if (err.code === 'EADDRINUSE') {
+                    reject(new Error(`Port ${port} is already in use. Please stop other processes or use a different port.`));
+                } else {
+                    reject(err);
+                }
             });
         });
     }
@@ -203,6 +213,7 @@ export class ProxyServer {
      */
     async stop() {
         if (this.server) {
+            await this._waitForStreamsToDrain();
             return new Promise((resolve, reject) => {
                 this.server.close((err) => {
                     if (err) reject(err);
@@ -210,5 +221,38 @@ export class ProxyServer {
                 });
             });
         }
+    }
+
+    _registerStream(res) {
+        if (!res) return;
+        this.activeStreams.add(res);
+        const cleanup = () => {
+            this.activeStreams.delete(res);
+        };
+        res.on('close', cleanup);
+        res.on('finish', cleanup);
+    }
+
+    _waitForStreamsToDrain(timeoutMs = 5000) {
+        if (this.activeStreams.size === 0) return Promise.resolve();
+
+        return new Promise((resolve) => {
+            const start = Date.now();
+            const check = () => {
+                if (this.activeStreams.size === 0) {
+                    resolve();
+                    return;
+                }
+                if (Date.now() - start >= timeoutMs) {
+                    logger.warn(
+                        `[Server] Timed out waiting for ${this.activeStreams.size} active stream(s) to finish`
+                    );
+                    resolve();
+                    return;
+                }
+                setTimeout(check, 100);
+            };
+            check();
+        });
     }
 }

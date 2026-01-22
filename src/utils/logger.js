@@ -1,7 +1,7 @@
 /**
  * Logger Utility
  *
- * Provides structured logging with colors and debug support.
+ * Provides structured logging with colors, debug support, and request context.
  * Simple ANSI codes used to avoid dependencies.
  */
 
@@ -29,6 +29,7 @@ class Logger extends EventEmitter {
         this.isDebugEnabled = false;
         this.history = [];
         this.maxHistory = 1000;
+        this.context = {};
     }
 
     /**
@@ -37,6 +38,14 @@ class Logger extends EventEmitter {
      */
     setDebug(enabled) {
         this.isDebugEnabled = !!enabled;
+    }
+
+    /**
+     * Set global warning/error context (e.g. process ID)
+     * @param {Object} context
+     */
+    setContext(context) {
+        this.context = { ...this.context, ...context };
     }
 
     /**
@@ -61,21 +70,36 @@ class Logger extends EventEmitter {
      * @param  {...any} args
      */
     print(level, color, message, ...args) {
-        // Format: [TIMESTAMP] [LEVEL] Message
+        // Format: [TIMESTAMP] [LEVEL] [CONTEXT] Message
         const timestampStr = this.getTimestamp();
         const timestamp = `${COLORS.GRAY}[${timestampStr}]${COLORS.RESET}`;
         const levelTag = `${color}[${level}]${COLORS.RESET}`;
 
+        let contextTag = '';
+        if (Object.keys(this.context).length > 0) {
+            const contextStr = Object.entries(this.context)
+                .map(([k, v]) => `${k}=${v}`)
+                .join(' ');
+            contextTag = `${COLORS.DIM}[${contextStr}]${COLORS.RESET} `;
+        }
+
+        // Handle errors specially if the first arg is an Error
+        if (message instanceof Error) {
+            args.unshift(message.stack || message.message);
+            message = '%s';
+        }
+
         // Format the message with args similar to console.log
         const formattedMessage = util.format(message, ...args);
 
-        console.log(`${timestamp} ${levelTag} ${formattedMessage}`);
+        console.log(`${timestamp} ${levelTag} ${contextTag}${formattedMessage}`);
 
         // Store structured log
         const logEntry = {
             timestamp: timestampStr,
             level,
-            message: formattedMessage
+            message: formattedMessage,
+            context: { ...this.context }
         };
 
         this.history.push(logEntry);
@@ -84,6 +108,46 @@ class Logger extends EventEmitter {
         }
 
         this.emit('log', logEntry);
+    }
+
+    /**
+     * Create a child logger with specific context
+     * @param {Object} context 
+     * @returns {Logger} A proxy to this logger with preset context
+     */
+    child(context) {
+        // Lightweight proxy to avoid creating full instances
+        return {
+            setContext: (newContext) => {
+                // Merge into the child's closure context
+                context = { ...context, ...newContext };
+            },
+            info: (msg, ...args) => this.printWithContext('INFO', COLORS.BLUE, context, msg, ...args),
+            success: (msg, ...args) => this.printWithContext('SUCCESS', COLORS.GREEN, context, msg, ...args),
+            warn: (msg, ...args) => this.printWithContext('WARN', COLORS.YELLOW, context, msg, ...args),
+            error: (msg, ...args) => this.printWithContext('ERROR', COLORS.RED, context, msg, ...args),
+            debug: (msg, ...args) => {
+                if (this.isDebugEnabled) {
+                    this.printWithContext('DEBUG', COLORS.MAGENTA, context, msg, ...args);
+                }
+            },
+            log: (msg, ...args) => console.log(msg, ...args),
+            header: (title) => console.log(`\n${COLORS.BRIGHT}${COLORS.CYAN}=== ${title} ===${COLORS.RESET}\n`)
+        };
+    }
+
+    /**
+     * Internal helper for child loggers
+     */
+    printWithContext(level, color, childContext, message, ...args) {
+        // Merge global context with child context temporarilly
+        const originalContext = this.context;
+        this.context = { ...this.context, ...childContext };
+        try {
+            this.print(level, color, message, ...args);
+        } finally {
+            this.context = originalContext;
+        }
     }
 
     /**
