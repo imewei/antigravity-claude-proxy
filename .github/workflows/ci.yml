@@ -66,7 +66,9 @@ jobs:
                   ANTIGRAVITY_UPSTREAM_URL: http://127.0.0.1:8081
               run: |
                   node tests/helpers/upstream-mock.js &
-                  npx wait-on http://127.0.0.1:8081
+                  # Wait for mock
+                  timeout 10s bash -c 'until curl -s http://127.0.0.1:8081/health; do sleep 1; done'
                   npm start &
-                  npx wait-on http://127.0.0.1:8080/health
+                  # Wait for proxy
+                  timeout 10s bash -c 'until curl -s http://127.0.0.1:8080/health; do sleep 1; done'
                   npm test

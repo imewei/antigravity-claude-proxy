@@ -13,6 +13,23 @@ export ACCOUNT_CONFIG_PATH="tests/fixtures/ci-accounts.json"
 
 echo "Starting Integration Test Environment..."
 
+# Helper for health check
+check_health() {
+    local url=$1
+    local max_retries=30
+    local count=0
+    echo "Waiting for $url..."
+    until curl -s "$url" > /dev/null; do
+        sleep 1
+        count=$((count + 1))
+        if [ $count -ge $max_retries ]; then
+            echo "Timeout waiting for $url"
+            return 1
+        fi
+    done
+    echo "$url is ready."
+}
+
 # 1. Start Mock Upstream
 echo "-> Starting Mock Upstream on port $MOCK_PORT..."
 node tests/helpers/upstream-mock.js &
@@ -20,7 +37,7 @@ MOCK_PID=$!
 echo "   Mock PID: $MOCK_PID"
 
 # Wait for mock to be ready
-sleep 1
+check_health "$UPSTREAM_URL/health"
 
 # 2. Start Proxy Server
 echo "-> Starting Proxy Server on port $SERVER_PORT..."
@@ -30,7 +47,7 @@ echo "   Server PID: $SERVER_PID"
 
 # Wait for server to be ready
 echo "-> Waiting for server to be ready..."
-npx wait-on "$PROXY_URL/health" -t 10000
+check_health "$PROXY_URL/health"
 
 # 3. Run Tests
 echo "-> Running Test Suite..."
