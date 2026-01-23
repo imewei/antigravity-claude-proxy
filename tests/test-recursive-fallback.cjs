@@ -28,8 +28,9 @@ async function testRecursiveFallback() {
                 return {
                     ok: false,
                     status: 429,
-                    text: async () => 'Resource exhausted: model info: model_capacity_exhausted',
-                    json: async () => ({ error: { message: 'Capacity exhausted' } })
+                    headers: new Headers({ 'retry-after': '60' }),
+                    text: async () => 'Rate limit exceeded',
+                    json: async () => ({ error: { message: 'Rate limit exceeded' } })
                 };
             }
 
@@ -62,13 +63,13 @@ async function testRecursiveFallback() {
             selectAccount: () => ({ account: { email: 'test@example.com' }, waitMs: 0 }),
             getTokenForAccount: async () => 'fake-token',
             getProjectForAccount: async () => 'fake-project',
-            clearExpiredLimits: () => {},
+            clearExpiredLimits: () => { },
             isAllRateLimited: () => false,
-            notifyFailure: () => {},
-            notifySuccess: () => {},
+            notifyFailure: () => { },
+            notifySuccess: () => { },
             getHealthTracker: () => ({ getConsecutiveFailures: () => 0 }),
-            markRateLimited: () => {},
-            notifyRateLimit: () => {}
+            markRateLimited: () => { },
+            notifyRateLimit: () => { }
         };
 
         console.log('TEST 1: Verify Fallback Chain');

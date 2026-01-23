@@ -178,6 +178,7 @@ export async function sendMessage(anthropicRequest, accountManager, fallbackEnab
                 );
                 await sleep(minWaitMs + 500); // Add 500ms buffer
                 accountManager.clearExpiredLimits();
+                attempt--; // Don't count this wait as a retry attempt
                 continue; // Retry the loop
             }
 

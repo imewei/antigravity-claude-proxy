@@ -13,6 +13,7 @@ import { createHealthRouter } from './routes/health.js';
 import { createLimitsRouter } from './routes/limits.js';
 import { createAuthRouter } from './routes/auth.js';
 import { createAnthropicRouter } from './routes/anthropic.js';
+import { QuotaManager } from '../account-manager/quota/quota-manager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 // __dirname should be root/src/server, but mountWebUI expects root/src (based on original __dirname being root/src)
@@ -31,6 +32,7 @@ export class ProxyServer {
         this.isInitialized = false;
         this.initPromise = null;
         this.activeStreams = new Set();
+        this.quotaManager = new QuotaManager(this.accountManager);
     }
 
     /**
@@ -45,6 +47,10 @@ export class ProxyServer {
             try {
                 await this.accountManager.initialize(strategyOverride);
                 this.isInitialized = true;
+
+                // Start quota manager
+                this.quotaManager.start();
+
                 const status = this.accountManager.getStatus();
                 logger.success(`[Server] Account pool initialized: ${status.summary}`);
             } catch (error) {
@@ -76,11 +82,11 @@ export class ProxyServer {
         const corsOrigin = process.env.CORS_ORIGIN ?? config.corsOrigin;
         const corsOptions = corsOrigin
             ? {
-                  origin: corsOrigin
-                      .split(',')
-                      .map((value) => value.trim())
-                      .filter(Boolean)
-              }
+                origin: corsOrigin
+                    .split(',')
+                    .map((value) => value.trim())
+                    .filter(Boolean)
+            }
             : { origin: false };
         this.app.use(cors(corsOptions));
         this.app.use(express.json({ limit: REQUEST_BODY_LIMIT }));
@@ -216,6 +222,9 @@ export class ProxyServer {
      * Stop the server
      */
     async stop() {
+        if (this.quotaManager) {
+            this.quotaManager.stop();
+        }
         if (this.server) {
             await this._waitForStreamsToDrain();
             return new Promise((resolve, reject) => {
