@@ -82,11 +82,11 @@ export class ProxyServer {
         const corsOrigin = process.env.CORS_ORIGIN ?? config.corsOrigin;
         const corsOptions = corsOrigin
             ? {
-                origin: corsOrigin
-                    .split(',')
-                    .map((value) => value.trim())
-                    .filter(Boolean)
-            }
+                  origin: corsOrigin
+                      .split(',')
+                      .map((value) => value.trim())
+                      .filter(Boolean)
+              }
             : { origin: false };
         this.app.use(cors(corsOptions));
         this.app.use(express.json({ limit: REQUEST_BODY_LIMIT }));

@@ -1,6 +1,6 @@
 /**
  * Quota Manager
- * 
+ *
  * Periodically refreshes quota and subscription data for all accounts.
  * This ensures that load balancing strategies have up-to-date information.
  */
@@ -37,14 +37,20 @@ export class QuotaManager {
     start() {
         if (this.#timer) return;
 
-        logger.info(`[QuotaManager] Starting periodic quota refresh (interval: ${this.#refreshInterval / 60000}m)`);
-        
+        logger.info(
+            `[QuotaManager] Starting periodic quota refresh (interval: ${this.#refreshInterval / 60000}m)`
+        );
+
         // Initial refresh
-        this.refreshAll().catch(e => logger.error(`[QuotaManager] Initial refresh failed: ${e.message}`));
+        this.refreshAll().catch((e) =>
+            logger.error(`[QuotaManager] Initial refresh failed: ${e.message}`)
+        );
 
         // Set up timer
         this.#timer = setInterval(() => {
-            this.refreshAll().catch(e => logger.error(`[QuotaManager] Periodic refresh failed: ${e.message}`));
+            this.refreshAll().catch((e) =>
+                logger.error(`[QuotaManager] Periodic refresh failed: ${e.message}`)
+            );
         }, this.#refreshInterval);
     }
 
@@ -66,7 +72,7 @@ export class QuotaManager {
         this.#isRefreshing = true;
 
         const accounts = this.#accountManager.getAllAccounts();
-        const enabledAccounts = accounts.filter(acc => acc.enabled !== false && !acc.isInvalid);
+        const enabledAccounts = accounts.filter((acc) => acc.enabled !== false && !acc.isInvalid);
 
         logger.info(`[QuotaManager] Refreshing quota for ${enabledAccounts.length} accounts...`);
 
@@ -76,7 +82,9 @@ export class QuotaManager {
                 // Stagger requests
                 await sleep(STAGGER_DELAY_MS);
             } catch (error) {
-                logger.warn(`[QuotaManager] Failed to refresh account ${account.email}: ${error.message}`);
+                logger.warn(
+                    `[QuotaManager] Failed to refresh account ${account.email}: ${error.message}`
+                );
             }
         }
 
@@ -95,7 +103,7 @@ export class QuotaManager {
         // 2. Discover/Verify project and get subscription tier
         // Note: This also verifies if the account is still valid
         const { tier, projectId } = await getSubscriptionTier(token);
-        
+
         // Update subscription if changed
         if (tier !== 'unknown' || projectId) {
             account.subscription = {
@@ -110,7 +118,7 @@ export class QuotaManager {
 
         // 3. Get model quotas
         const quotas = await getModelQuotas(token, account.projectId);
-        
+
         // Update quota data
         account.quota = {
             models: quotas,
@@ -120,7 +128,9 @@ export class QuotaManager {
         // 4. Persistence
         await this.#accountManager.saveToDisk();
 
-        logger.debug(`[QuotaManager] Refreshed ${account.email}: tier=${tier}, models=${Object.keys(quotas).length}`);
+        logger.debug(
+            `[QuotaManager] Refreshed ${account.email}: tier=${tier}, models=${Object.keys(quotas).length}`
+        );
     }
 }
 

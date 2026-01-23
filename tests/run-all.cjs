@@ -39,7 +39,7 @@ function isPortInUse(port) {
             socket.destroy();
             resolve(false);
         });
-        socket.on('error', (err) => {
+        socket.on('error', () => {
             socket.destroy();
             resolve(false);
         });
@@ -221,7 +221,6 @@ async function main() {
 
         cleanup();
         process.exit(allPassed ? 0 : 1);
-
     } catch (err) {
         console.error('Test runner failed:', err);
         cleanup();
