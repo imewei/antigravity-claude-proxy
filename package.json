@@ -36,6 +36,8 @@
         "test:oauth": "node tests/test-oauth-no-browser.cjs",
         "test:emptyretry": "node tests/test-empty-response-retry.cjs",
         "test:sanitizer": "node tests/test-schema-sanitizer.cjs",
+        "test:manualauth": "node tests/test-manual-oauth-flow.cjs",
+        "test:smartwait": "node tests/test-smart-backoff.cjs",
         "test:strategies": "node tests/test-strategies.cjs",
         "lint": "eslint src tests public/js bin",
         "lint:fix": "eslint src tests public/js bin --fix",

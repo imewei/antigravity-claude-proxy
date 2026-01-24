@@ -737,11 +737,15 @@ export function mountWebUI(app, dirname, accountManager) {
             const { url, verifier, state } = getAuthorizationUrl();
 
             // Start callback server on port 51121 (same as CLI)
-            const serverPromise = startCallbackServer(state, 120000); // 2 min timeout
+            const { promise: serverPromise, abort: abortServer } = startCallbackServer(
+                state,
+                120000
+            ); // 2 min timeout
 
             // Store the flow data
             pendingOAuthFlows.set(state, {
                 serverPromise,
+                abortServer,
                 verifier,
                 state,
                 timestamp: Date.now()
@@ -774,13 +778,88 @@ export function mountWebUI(app, dirname, accountManager) {
                     }
                 })
                 .catch((err) => {
-                    logger.error('[WebUI] OAuth callback server error:', err);
+                    // Only log if not aborted (manual completion causes this)
+                    if (!err.message?.includes('aborted')) {
+                        logger.error('[WebUI] OAuth callback server error:', err);
+                    }
                     pendingOAuthFlows.delete(state);
                 });
 
-            res.json({ status: 'ok', url });
+            res.json({ status: 'ok', url, state });
         } catch (error) {
             logger.error('[WebUI] Error generating auth URL:', error);
+            res.status(500).json({ status: 'error', error: error.message });
+        }
+    });
+
+    /**
+     * POST /api/auth/complete - Complete OAuth with manually submitted callback URL/code
+     * Used when auto-callback cannot reach the local server
+     */
+    app.post('/api/auth/complete', async (req, res) => {
+        try {
+            const { callbackInput, state } = req.body;
+
+            if (!callbackInput || !state) {
+                return res.status(400).json({
+                    status: 'error',
+                    error: 'Missing callbackInput or state'
+                });
+            }
+
+            // Find the pending flow
+            const flowData = pendingOAuthFlows.get(state);
+            if (!flowData) {
+                return res.status(400).json({
+                    status: 'error',
+                    error: 'OAuth flow not found. The account may have been already added via auto-callback. Please refresh the account list.'
+                });
+            }
+
+            const { verifier, abortServer } = flowData;
+
+            // Extract code from input (URL or raw code)
+            const { extractCodeFromInput, completeOAuthFlow } = await import('../auth/oauth.js');
+            const { code, state: callbackState } = extractCodeFromInput(callbackInput);
+
+            if (callbackState && callbackState !== state) {
+                return res.status(400).json({
+                    status: 'error',
+                    error: 'OAuth state mismatch. Please restart the OAuth flow.'
+                });
+            }
+
+            // Complete the OAuth flow
+            const accountData = await completeOAuthFlow(code, verifier);
+
+            // Add or update the account
+            await addAccount({
+                email: accountData.email,
+                refreshToken: accountData.refreshToken,
+                projectId: accountData.projectId,
+                source: 'oauth'
+            });
+
+            // Reload AccountManager to pick up the new account
+            await accountManager.reload();
+
+            // Abort the callback server since manual completion succeeded
+            if (abortServer) {
+                abortServer();
+            }
+
+            // Clean up
+            pendingOAuthFlows.delete(state);
+
+            logger.success(`[WebUI] Account ${accountData.email} added via manual callback`);
+
+            res.json({
+                status: 'ok',
+                email: accountData.email,
+                message: `Account ${accountData.email} added successfully`
+            });
+        } catch (error) {
+            logger.error('[WebUI] Manual OAuth completion error:', error);
             res.status(500).json({ status: 'error', error: error.message });
         }
     });
