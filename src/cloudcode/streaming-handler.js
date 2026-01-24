@@ -10,11 +10,9 @@ import {
     MAX_RETRIES,
     MAX_EMPTY_RESPONSE_RETRIES,
     MAX_WAIT_BEFORE_ERROR_MS,
-    DEFAULT_COOLDOWN_MS,
-    RATE_LIMIT_DEDUP_WINDOW_MS,
     MAX_CONSECUTIVE_FAILURES,
     EXTENDED_COOLDOWN_MS,
-    CAPACITY_RETRY_DELAY_MS,
+    CAPACITY_BACKOFF_TIERS_MS,
     MAX_CAPACITY_RETRIES,
     REQUEST_TIMEOUT_MS
 } from '../constants.js';
@@ -27,97 +25,20 @@ import {
     getExponentialBackoffMs
 } from '../utils/helpers.js';
 import { logger } from '../utils/logger.js';
-import { parseResetTime } from './rate-limit-parser.js';
+import { parseResetTime, parseRateLimitReason } from './rate-limit-parser.js';
 import { buildCloudCodeRequest, buildHeaders } from './request-builder.js';
 import { streamSSEResponse } from './sse-streamer.js';
 import { getFallbackModel } from '../fallback-config.js';
 import crypto from 'node:crypto';
 import { fetchWithTimeout } from './fetch-utils.js';
 import { mockMessageStream } from './mock-stream-handler.js';
-
-/**
- * Gap 1: Rate limit deduplication - prevents thundering herd on concurrent rate limits
- * Tracks last rate limit timestamp per model to skip duplicate retries
- */
-const lastRateLimitTimestamps = new Map(); // modelId -> timestamp
-
-/**
- * Check if we should skip retry due to recent rate limit on this model
- * @param {string} model - Model ID
- * @returns {boolean} True if retry should be skipped (within dedup window)
- */
-function shouldSkipRetryDueToDedup(model) {
-    const lastTimestamp = lastRateLimitTimestamps.get(model);
-    if (!lastTimestamp) return false;
-
-    const elapsed = Date.now() - lastTimestamp;
-    if (elapsed < RATE_LIMIT_DEDUP_WINDOW_MS) {
-        logger.debug(
-            `[CloudCode] Rate limit on ${model} within dedup window (${elapsed}ms ago), skipping retry`
-        );
-        return true;
-    }
-    return false;
-}
-
-/**
- * Record rate limit timestamp for deduplication
- * @param {string} model - Model ID
- */
-function recordRateLimitTimestamp(model) {
-    lastRateLimitTimestamps.set(model, Date.now());
-}
-
-/**
- * Clear rate limit timestamp after successful retry
- * @param {string} model - Model ID
- */
-function clearRateLimitTimestamp(model) {
-    lastRateLimitTimestamps.delete(model);
-}
-
-/**
- * Gap 3: Detect permanent authentication failures that require re-authentication
- * @param {string} errorText - Error message from API
- * @returns {boolean} True if permanent auth failure
- */
-function isPermanentAuthFailure(errorText) {
-    const lower = (errorText || '').toLowerCase();
-    return (
-        lower.includes('invalid_grant') ||
-        lower.includes('token revoked') ||
-        lower.includes('token has been expired or revoked') ||
-        lower.includes('token_revoked') ||
-        lower.includes('invalid_client') ||
-        lower.includes('credentials are invalid')
-    );
-}
-
-/**
- * Gap 4: Detect if 429 error is due to model capacity (not user quota)
- * @param {string} errorText - Error message from API
- * @returns {boolean} True if capacity exhausted (not quota)
- */
-function isModelCapacityExhausted(errorText) {
-    const lower = (errorText || '').toLowerCase();
-    return (
-        lower.includes('model_capacity_exhausted') ||
-        lower.includes('capacity_exhausted') ||
-        lower.includes('model is currently overloaded') ||
-        lower.includes('service temporarily unavailable') ||
-        lower.includes('no capacity available')
-    );
-}
-
-// Periodically clean up stale dedup timestamps (every 60 seconds)
-setInterval(() => {
-    const cutoff = Date.now() - 60000; // 1 minute
-    for (const [model, timestamp] of lastRateLimitTimestamps.entries()) {
-        if (timestamp < cutoff) {
-            lastRateLimitTimestamps.delete(model);
-        }
-    }
-}, 60000);
+import {
+    getRateLimitBackoff,
+    clearRateLimitState,
+    isPermanentAuthFailure,
+    isModelCapacityExhausted,
+    calculateSmartBackoff
+} from './retry-utils.js';
 
 /**
  * Send a streaming request to Cloud Code with multi-account support
@@ -199,7 +120,7 @@ export async function* sendMessageStream(
             }
 
             // No accounts available and not rate-limited (shouldn't happen normally)
-            throw new Error('No accounts available');
+            throw new Error('No accounts available for ' + model);
         }
 
         // Select account using configured strategy
@@ -221,10 +142,6 @@ export async function* sendMessageStream(
             continue;
         }
 
-        if (!account) {
-            continue; // Shouldn't happen, but safety check
-        }
-
         try {
             // Get token and project for this account
             let token = await accountManager.getTokenForAccount(account);
@@ -235,7 +152,6 @@ export async function* sendMessageStream(
 
             // Try each endpoint with index-based loop for capacity retry support
             let lastError = null;
-            let retriedOnce = false; // Track if we've already retried for short rate limit
             let capacityRetryCount = 0; // Gap 4: Track capacity exhaustion retries
             let endpointIndex = 0;
 
@@ -291,7 +207,10 @@ export async function* sendMessageStream(
                             if (isModelCapacityExhausted(errorText)) {
                                 if (capacityRetryCount < MAX_CAPACITY_RETRIES) {
                                     capacityRetryCount++;
-                                    const waitMs = resetMs || CAPACITY_RETRY_DELAY_MS;
+                                    const waitMs =
+                                        resetMs ||
+                                        CAPACITY_BACKOFF_TIERS_MS[capacityRetryCount - 1] ||
+                                        CAPACITY_RETRY_DELAY_MS;
                                     logger.info(
                                         `[CloudCode] Model capacity exhausted, retry ${capacityRetryCount}/${MAX_CAPACITY_RETRIES} after ${formatDuration(waitMs)}...`
                                     );
@@ -305,53 +224,31 @@ export async function* sendMessageStream(
                                 );
                             }
 
-                            // Gap 1: Check deduplication window to prevent thundering herd
-                            if (shouldSkipRetryDueToDedup(model)) {
-                                logger.info(
-                                    `[CloudCode] Skipping retry due to recent rate limit, switching account...`
-                                );
-                                accountManager.markRateLimited(
-                                    account.email,
-                                    resetMs || DEFAULT_COOLDOWN_MS,
-                                    model
-                                );
-                                throw new Error(`RATE_LIMITED_DEDUP: ${errorText}`);
-                            }
+                            // Calculate smart backoff based on error type
+                            const { attempt: failAttempt } = getRateLimitBackoff(
+                                account.email,
+                                model,
+                                resetMs
+                            );
+                            const smartWaitMs = calculateSmartBackoff(
+                                errorText,
+                                resetMs,
+                                failAttempt
+                            );
 
-                            // Decision: wait and retry OR switch account
-                            if (resetMs && resetMs > DEFAULT_COOLDOWN_MS) {
-                                // Long-term quota exhaustion (> 10s) - switch to next account
-                                logger.info(
-                                    `[CloudCode] Quota exhausted for ${account.email} (${formatDuration(resetMs)}), switching account...`
-                                );
-                                accountManager.markRateLimited(account.email, resetMs, model);
-                                throw new Error(`QUOTA_EXHAUSTED: ${errorText}`);
-                            } else {
-                                // Short-term rate limit (<= 10s) - wait and retry once
-                                const waitMs = resetMs || DEFAULT_COOLDOWN_MS;
+                            logger.info(
+                                `[CloudCode] Rate limit for ${account.email} on ${model} (Reason: ${parseRateLimitReason(errorText)}), Waiting ${formatDuration(smartWaitMs)} then switching...`
+                            );
 
-                                if (!retriedOnce) {
-                                    retriedOnce = true;
-                                    recordRateLimitTimestamp(model); // Gap 1: Record before retry
-                                    logger.info(
-                                        `[CloudCode] Short rate limit (${formatDuration(waitMs)}), waiting and retrying...`
-                                    );
-                                    await sleep(waitMs);
-                                    // Don't increment endpointIndex - retry same endpoint
-                                    continue;
-                                } else {
-                                    // Already retried once, mark and switch
-                                    accountManager.markRateLimited(account.email, waitMs, model);
-                                    throw new Error(`RATE_LIMITED: ${errorText}`);
-                                }
-                            }
+                            accountManager.markRateLimited(account.email, smartWaitMs, model);
+                            throw new Error(`RATE_LIMITED: ${errorText}`);
                         }
 
                         lastError = new Error(`API error ${response.status}: ${errorText}`);
 
-                        // Try next endpoint for 403/404/5xx errors (matches opencode-antigravity-auth behavior)
+                        // Try next endpoint for 403/404/5xx errors
                         if (response.status === 403 || response.status === 404) {
-                            logger.warn(`[CloudCode] ${response.status} at ${endpoint}..`);
+                            logger.warn(`[CloudCode] ${response.status} at ${endpoint}...`);
                         } else if (response.status >= 500) {
                             logger.warn(
                                 `[CloudCode] ${response.status} stream error, waiting 1s before retry...`
@@ -374,8 +271,8 @@ export async function* sendMessageStream(
                         try {
                             yield* streamSSEResponse(currentResponse, anthropicRequest.model);
                             logger.debug('[CloudCode] Stream completed');
-                            // Gap 1: Clear timestamp on success
-                            clearRateLimitTimestamp(model);
+                            // Clear rate limit state on success
+                            clearRateLimitState(account.email, model);
                             accountManager.notifySuccess(account, model);
                             return;
                         } catch (streamError) {
@@ -393,7 +290,7 @@ export async function* sendMessageStream(
                                 return;
                             }
 
-                            // Exponential backoff: 500ms, 1000ms, 2000ms
+                            // Exponential backoff
                             const backoffMs = getExponentialBackoffMs(500, emptyRetries);
                             logger.warn(
                                 `[CloudCode] Empty response, retry ${emptyRetries + 1}/${MAX_EMPTY_RESPONSE_RETRIES} after ${backoffMs}ms...`
@@ -416,7 +313,7 @@ export async function* sendMessageStream(
                             if (!currentResponse.ok) {
                                 const retryErrorText = await currentResponse.text();
 
-                                // Rate limit error - mark account and throw to trigger account switch
+                                // Rate limit error
                                 if (currentResponse.status === 429) {
                                     const resetMs = parseResetTime(currentResponse, retryErrorText);
                                     accountManager.markRateLimited(account.email, resetMs, model);
@@ -425,7 +322,7 @@ export async function* sendMessageStream(
                                     );
                                 }
 
-                                // Auth error - check for permanent failure
+                                // Auth error
                                 if (currentResponse.status === 401) {
                                     if (isPermanentAuthFailure(retryErrorText)) {
                                         logger.error(
@@ -451,7 +348,6 @@ export async function* sendMessageStream(
                                     logger.warn(
                                         `[CloudCode] Retry got ${currentResponse.status}, will retry...`
                                     );
-                                    await sleep(1000);
                                     await sleep(1000);
                                     currentResponse = await fetchWithTimeout(
                                         url,
@@ -485,6 +381,9 @@ export async function* sendMessageStream(
                     if (isEmptyResponseError(endpointError)) {
                         throw endpointError;
                     }
+                    if (endpointError.message.includes('AUTH_INVALID_PERMANENT')) {
+                        throw endpointError;
+                    }
                     logger.warn(`[CloudCode] Stream error at ${endpoint}:`, endpointError.message);
                     lastError = endpointError;
                     endpointIndex++;
@@ -494,9 +393,8 @@ export async function* sendMessageStream(
             // If all endpoints failed for this account
             if (lastError) {
                 if (lastError.is429) {
-                    logger.warn(`[CloudCode] All endpoints rate-limited for ${account.email}`);
-                    accountManager.markRateLimited(account.email, lastError.resetMs, model);
-                    throw new Error(`Rate limited: ${lastError.errorText}`);
+                    // Already handled in loop
+                    throw lastError;
                 }
                 throw lastError;
             }

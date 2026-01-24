@@ -138,9 +138,9 @@ export function parseResetTime(responseOrError, errorText = '') {
             }
         }
 
-        // Try to extract duration like "1h23m45s" or "23m45s" or "45s"
+        // Try to extract duration like "1h 23m 45s" or "23m 45s" or "45s"
         if (!resetMs) {
-            const durationMatch = msg.match(/(\d+)h(\d+)m(\d+)s|(\d+)m(\d+)s|(\d+)s/i);
+            const durationMatch = msg.match(/(\d+)h\s*(\d+)m\s*(\d+)s|(\d+)m\s*(\d+)s|(\d+)s/i);
             if (durationMatch) {
                 if (durationMatch[1]) {
                     const hours = parseInt(durationMatch[1], 10);
@@ -179,15 +179,76 @@ export function parseResetTime(responseOrError, errorText = '') {
         }
     }
 
-    // SANITY CHECK: Enforce strict minimums for found rate limits
-    // If we found a reset time, but it's very small (e.g. < 1s) or negative,
-    // explicitly bump it up to avoid "Available in 0s" loops.
+    // SANITY CHECK: Handle very small or negative reset times
+    // For sub-second rate limits (common with per-second quotas), add a small buffer
+    // For negative or zero, use a reasonable minimum
     if (resetMs !== null) {
-        if (resetMs < 1000) {
-            logger.debug(`[CloudCode] Reset time too small (${resetMs}ms), enforcing 2s buffer`);
-            resetMs = 2000;
+        if (resetMs <= 0) {
+            logger.debug(`[CloudCode] Reset time invalid (${resetMs}ms), using 500ms default`);
+            resetMs = 500;
+        } else if (resetMs < 500) {
+            // Very short reset - add 200ms buffer for network latency
+            logger.debug(`[CloudCode] Short reset time (${resetMs}ms), adding 200ms buffer`);
+            resetMs = resetMs + 200;
         }
+        // Note: No longer enforcing 2s minimum - this was causing cascading failures
+        // when all accounts had short rate limits simultaneously
     }
 
     return resetMs;
+}
+
+/**
+ * Parse the rate limit reason from error text
+ * Used for smart backoff by error type (matches opencode-antigravity-auth)
+ *
+ * @param {string} errorText - Error message/body text
+ * @returns {'RATE_LIMIT_EXCEEDED' | 'QUOTA_EXHAUSTED' | 'MODEL_CAPACITY_EXHAUSTED' | 'SERVER_ERROR' | 'UNKNOWN'} Error reason
+ */
+export function parseRateLimitReason(errorText) {
+    const lower = (errorText || '').toLowerCase();
+
+    // Check for quota exhaustion (daily/hourly limits)
+    if (
+        lower.includes('quota_exhausted') ||
+        lower.includes('quotaresetdelay') ||
+        lower.includes('quotaresettimestamp') ||
+        lower.includes('resource_exhausted') ||
+        lower.includes('resource exhausted') || // Added space variant
+        lower.includes('resource has been exhausted') || // Added verbose variant
+        lower.includes('daily limit') ||
+        lower.includes('quota exceeded')
+    ) {
+        return 'QUOTA_EXHAUSTED';
+    }
+
+    // Check for rate limit exceeded (per-minute/per-second limits)
+    if (
+        lower.includes('rate_limit_exceeded') ||
+        lower.includes('rate limit exceeded') ||
+        lower.includes('too many requests') ||
+        lower.includes('429')
+    ) {
+        return 'RATE_LIMIT_EXCEEDED';
+    }
+
+    // Check for model capacity/overload
+    if (
+        lower.includes('model_capacity_exhausted') ||
+        lower.includes('capacity_exhausted') ||
+        lower.includes('model capacity exhausted') || // Added space variant
+        lower.includes('model is currently overloaded') ||
+        lower.includes('service is currently overloaded') || // Added variant
+        lower.includes('service temporarily unavailable') ||
+        lower.includes('no capacity available')
+    ) {
+        return 'MODEL_CAPACITY_EXHAUSTED';
+    }
+
+    // Check for server errors
+    if (lower.includes('internal server error') || lower.includes('500') || lower.includes('503')) {
+        return 'SERVER_ERROR';
+    }
+
+    return 'UNKNOWN';
 }
