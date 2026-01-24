@@ -219,6 +219,10 @@ export async function* sendMessageStream(
                                     logger.info(
                                         `[CloudCode] Model capacity exhausted (${response.status}), retry ${capacityRetryCount}/${MAX_CAPACITY_RETRIES} after ${formatDuration(waitMs)}...`
                                     );
+
+                                    // Keep connection alive during wait
+                                    yield { type: 'ping' };
+
                                     await sleep(waitMs);
                                     // Don't increment endpointIndex - retry same endpoint
                                     continue;
