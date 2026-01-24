@@ -14,6 +14,7 @@ import {
     EXTENDED_COOLDOWN_MS,
     CAPACITY_BACKOFF_TIERS_MS,
     MAX_CAPACITY_RETRIES,
+    CAPACITY_RETRY_DELAY_MS,
     REQUEST_TIMEOUT_MS
 } from '../constants.js';
 import { isRateLimitError, isAuthError, isEmptyResponseError } from '../errors.js';
@@ -200,53 +201,63 @@ export async function* sendMessageStream(
                             continue;
                         }
 
-                        if (response.status === 429) {
-                            const resetMs = parseResetTime(response, errorText);
-
+                        if (
+                            response.status === 429 ||
+                            response.status === 503 ||
+                            isModelCapacityExhausted(errorText)
+                        ) {
                             // Gap 4: Check if capacity issue (NOT quota) - retry SAME endpoint
-                            if (isModelCapacityExhausted(errorText)) {
+                            // 503 is almost always capacity/overload, 429 can be both
+                            if (isModelCapacityExhausted(errorText) || response.status === 503) {
                                 if (capacityRetryCount < MAX_CAPACITY_RETRIES) {
                                     capacityRetryCount++;
+                                    const resetMs = parseResetTime(response, errorText);
                                     const waitMs =
                                         resetMs ||
                                         CAPACITY_BACKOFF_TIERS_MS[capacityRetryCount - 1] ||
                                         CAPACITY_RETRY_DELAY_MS;
                                     logger.info(
-                                        `[CloudCode] Model capacity exhausted, retry ${capacityRetryCount}/${MAX_CAPACITY_RETRIES} after ${formatDuration(waitMs)}...`
+                                        `[CloudCode] Model capacity exhausted (${response.status}), retry ${capacityRetryCount}/${MAX_CAPACITY_RETRIES} after ${formatDuration(waitMs)}...`
                                     );
                                     await sleep(waitMs);
                                     // Don't increment endpointIndex - retry same endpoint
                                     continue;
                                 }
-                                // Max capacity retries exceeded - treat as quota exhaustion
+                                // Max capacity retries exceeded - treat as quota exhaustion if it was 429,
+                                // or just fail/switch if it was 503
                                 logger.warn(
-                                    `[CloudCode] Max capacity retries (${MAX_CAPACITY_RETRIES}) exceeded, switching account`
+                                    `[CloudCode] Max capacity retries (${MAX_CAPACITY_RETRIES}) exceeded`
                                 );
                             }
 
-                            // Calculate smart backoff based on error type
-                            const { attempt: failAttempt } = getRateLimitBackoff(
-                                account.email,
-                                model,
-                                resetMs
-                            );
-                            const smartWaitMs = calculateSmartBackoff(
-                                errorText,
-                                resetMs,
-                                failAttempt
-                            );
+                            // If it's a 429 (Quota/Rate Limit), handle smart backoff and account switch
+                            if (response.status === 429) {
+                                const resetMs = parseResetTime(response, errorText);
 
-                            logger.info(
-                                `[CloudCode] Rate limit for ${account.email} on ${model} (Reason: ${parseRateLimitReason(errorText)}), Waiting ${formatDuration(smartWaitMs)} then switching...`
-                            );
+                                // Calculate smart backoff based on error type
+                                const { attempt: failAttempt } = getRateLimitBackoff(
+                                    account.email,
+                                    model,
+                                    resetMs
+                                );
+                                const smartWaitMs = calculateSmartBackoff(
+                                    errorText,
+                                    resetMs,
+                                    failAttempt
+                                );
 
-                            accountManager.markRateLimited(account.email, smartWaitMs, model);
-                            throw new Error(`RATE_LIMITED: ${errorText}`);
+                                logger.info(
+                                    `[CloudCode] Rate limit for ${account.email} on ${model} (Reason: ${parseRateLimitReason(errorText)}), Waiting ${formatDuration(smartWaitMs)} then switching...`
+                                );
+
+                                accountManager.markRateLimited(account.email, smartWaitMs, model);
+                                throw new Error(`RATE_LIMITED: ${errorText}`);
+                            }
                         }
 
                         lastError = new Error(`API error ${response.status}: ${errorText}`);
 
-                        // Try next endpoint for 403/404/5xx errors
+                        // Try next endpoint for 403/404/5xx errors (if not handled above as capacity)
                         if (response.status === 403 || response.status === 404) {
                             logger.warn(`[CloudCode] ${response.status} at ${endpoint}...`);
                         } else if (response.status >= 500) {

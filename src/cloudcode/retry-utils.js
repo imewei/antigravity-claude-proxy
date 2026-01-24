@@ -138,13 +138,14 @@ export function calculateSmartBackoff(errorText, serverResetMs, consecutiveFailu
     const reason = parseRateLimitReason(errorText);
 
     switch (reason) {
-        case 'QUOTA_EXHAUSTED':
+        case 'QUOTA_EXHAUSTED': {
             // Progressive backoff: [60s, 5m, 30m, 2h]
             const tierIndex = Math.min(
                 Math.max(consecutiveFailures - 1, 0),
                 QUOTA_EXHAUSTED_BACKOFF_TIERS_MS.length - 1
             );
             return QUOTA_EXHAUSTED_BACKOFF_TIERS_MS[tierIndex];
+        }
         case 'RATE_LIMIT_EXCEEDED':
             return BACKOFF_BY_ERROR_TYPE.RATE_LIMIT_EXCEEDED;
         case 'MODEL_CAPACITY_EXHAUSTED':

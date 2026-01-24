@@ -13,6 +13,7 @@ import {
     EXTENDED_COOLDOWN_MS,
     CAPACITY_BACKOFF_TIERS_MS,
     MAX_CAPACITY_RETRIES,
+    CAPACITY_RETRY_DELAY_MS,
     isThinkingModel
 } from '../constants.js';
 import { convertGoogleToAnthropic } from '../format/index.js';
