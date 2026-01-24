@@ -144,7 +144,8 @@ export async function sendMessage(anthropicRequest, accountManager, fallbackEnab
                         ? `${endpoint}/v1internal:streamGenerateContent?alt=sse`
                         : `${endpoint}/v1internal:generateContent`;
 
-                    const response = await fetchWithTimeout( // Using fetchWithTimeout from internal utils
+                    const response = await fetchWithTimeout(
+                        // Using fetchWithTimeout from internal utils
                         url,
                         {
                             method: 'POST',

@@ -63,7 +63,9 @@ async function testSmartBackoff() {
             if (result === c.expected) {
                 passed++;
             } else {
-                console.log(`  [FAIL] Input: "${c.text}" -> Expected: ${c.expected}, Got: ${result}`);
+                console.log(
+                    `  [FAIL] Input: "${c.text}" -> Expected: ${c.expected}, Got: ${result}`
+                );
             }
         }
 
@@ -118,9 +120,7 @@ async function testSmartBackoff() {
             if (result === c.expected) {
                 passed++;
             } else {
-                console.log(
-                    `  [FAIL] ${c.desc} -> Expected: ${c.expected}, Got: ${result}`
-                );
+                console.log(`  [FAIL] ${c.desc} -> Expected: ${c.expected}, Got: ${result}`);
             }
         }
 
@@ -138,10 +138,7 @@ async function testSmartBackoff() {
         // Verify constants
         assert.ok(QUOTA_EXHAUSTED_BACKOFF_TIERS_MS.length > 0, 'Quota tiers exist');
         assert.ok(BACKOFF_BY_ERROR_TYPE.RATE_LIMIT_EXCEEDED > 0, 'Rate limit backoff defined');
-        assert.ok(
-            BACKOFF_BY_ERROR_TYPE.MODEL_CAPACITY_EXHAUSTED > 0,
-            'Capacity backoff defined'
-        );
+        assert.ok(BACKOFF_BY_ERROR_TYPE.MODEL_CAPACITY_EXHAUSTED > 0, 'Capacity backoff defined');
 
         console.log('  ✓ Constants verified');
         console.log('  Result: PASS\n');
@@ -164,7 +161,9 @@ async function testSmartBackoff() {
         if (quotaBackoff === QUOTA_EXHAUSTED_BACKOFF_TIERS_MS[0]) {
             console.log('  ✓ Quota exhaustion tier 0 correct');
         } else {
-            console.log(`  [FAIL] Quota tier 0: expected ${QUOTA_EXHAUSTED_BACKOFF_TIERS_MS[0]}, got ${quotaBackoff}`);
+            console.log(
+                `  [FAIL] Quota tier 0: expected ${QUOTA_EXHAUSTED_BACKOFF_TIERS_MS[0]}, got ${quotaBackoff}`
+            );
             passed = false;
         }
 

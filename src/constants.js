@@ -83,8 +83,8 @@ const ACCOUNT_CONFIG_PATH_ENV = process.env.ACCOUNT_CONFIG_PATH;
 export const ACCOUNT_CONFIG_PATH = ACCOUNT_CONFIG_PATH_ENV
     ? resolve(ACCOUNT_CONFIG_PATH_ENV)
     : config?.accountConfigPath
-        ? resolve(config.accountConfigPath)
-        : join(homedir(), '.config/antigravity-proxy/accounts.json');
+      ? resolve(config.accountConfigPath)
+      : join(homedir(), '.config/antigravity-proxy/accounts.json');
 
 // Usage history persistence path
 export const USAGE_HISTORY_PATH = join(homedir(), '.config/antigravity-proxy/usage-history.json');
@@ -121,18 +121,18 @@ export const MIN_BACKOFF_MS = 500;
 
 // Backoff tiers for quota exhaustion (progressive penalties)
 export const QUOTA_EXHAUSTED_BACKOFF_TIERS_MS = [
-    60000,   // 1 min
-    300000,  // 5 min
+    60000, // 1 min
+    300000, // 5 min
     1800000, // 30 min
-    7200000  // 2 hours
+    7200000 // 2 hours
 ];
 
 // Backoff config by error type
 export const BACKOFF_BY_ERROR_TYPE = {
-    RATE_LIMIT_EXCEEDED: 5000,      // Standard 5s wait for short rate limits
+    RATE_LIMIT_EXCEEDED: 5000, // Standard 5s wait for short rate limits
     MODEL_CAPACITY_EXHAUSTED: 2000, // Short 2s wait for capacity issues
-    SERVER_ERROR: 1000,             // 1s for 5xx errors
-    UNKNOWN: 2000                   // Default fallback
+    SERVER_ERROR: 1000, // 1s for 5xx errors
+    UNKNOWN: 2000 // Default fallback
 };
 
 export const CAPACITY_BACKOFF_TIERS_MS = [5000, 10000, 20000, 30000, 60000];
