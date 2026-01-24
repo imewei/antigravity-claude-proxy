@@ -822,7 +822,9 @@ async function runTests() {
         const healthTracker = strategy.getHealthTracker();
         const tokenTracker = strategy.getTokenBucketTracker();
 
-        assertEqual(healthTracker.getScore(accounts[0].email), 50, 'Health should decrease by 20');
+        // Health might have gained a tiny amount from passive recovery in the few ms execution
+        const score = healthTracker.getScore(accounts[0].email);
+        assertWithin(score, 50, 50.1, 'Health should decrease by approx 20');
         assertEqual(
             tokenTracker.getTokens(accounts[0].email),
             tokensBefore + 1,

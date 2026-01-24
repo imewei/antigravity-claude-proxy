@@ -23,7 +23,9 @@ const tests = [
     { name: 'Empty Response Retry', file: 'test-empty-response-retry.cjs' },
     { name: 'Schema Sanitizer', file: 'test-schema-sanitizer.cjs' },
     { name: 'Streaming Whitespace', file: 'test-streaming-whitespace.cjs' },
-    { name: 'Recursive Fallback', file: 'test-recursive-fallback.cjs' }
+    { name: 'Recursive Fallback', file: 'test-recursive-fallback.cjs' },
+    { name: 'Smart Backoff & Rate Limit', file: 'test-smart-backoff.cjs' },
+    { name: 'Manual OAuth Flow', file: 'test-manual-oauth-flow.cjs' }
 ];
 
 // Helper to check if a port is in use

@@ -83,8 +83,8 @@ const ACCOUNT_CONFIG_PATH_ENV = process.env.ACCOUNT_CONFIG_PATH;
 export const ACCOUNT_CONFIG_PATH = ACCOUNT_CONFIG_PATH_ENV
     ? resolve(ACCOUNT_CONFIG_PATH_ENV)
     : config?.accountConfigPath
-      ? resolve(config.accountConfigPath)
-      : join(homedir(), '.config/antigravity-proxy/accounts.json');
+        ? resolve(config.accountConfigPath)
+        : join(homedir(), '.config/antigravity-proxy/accounts.json');
 
 // Usage history persistence path
 export const USAGE_HISTORY_PATH = join(homedir(), '.config/antigravity-proxy/usage-history.json');
@@ -104,6 +104,7 @@ export const MAX_WAIT_BEFORE_ERROR_MS = config?.maxWaitBeforeErrorMs || 120000; 
 
 // Gap 1: Retry deduplication - prevents thundering herd on concurrent rate limits
 export const RATE_LIMIT_DEDUP_WINDOW_MS = config?.rateLimitDedupWindowMs || 5000; // 5 seconds
+export const RATE_LIMIT_STATE_RESET_MS = 60000; // Reset rate limit state after 1 minute of inactivity
 
 // Gap 2: Consecutive failure tracking - extended cooldown after repeated failures
 export const MAX_CONSECUTIVE_FAILURES = config?.maxConsecutiveFailures || 3;
@@ -112,6 +113,29 @@ export const EXTENDED_COOLDOWN_MS = config?.extendedCooldownMs || 60000; // 1 mi
 // Gap 4: Capacity exhaustion - shorter retry for model capacity issues (not quota)
 export const CAPACITY_RETRY_DELAY_MS = config?.capacityRetryDelayMs || 2000; // 2 seconds
 export const MAX_CAPACITY_RETRIES = config?.maxCapacityRetries || 3;
+
+// Rate Limit Backoff Constants (from upstream v2.4.0)
+export const FIRST_RETRY_DELAY_MS = 1000;
+export const SWITCH_ACCOUNT_DELAY_MS = 1000;
+export const MIN_BACKOFF_MS = 500;
+
+// Backoff tiers for quota exhaustion (progressive penalties)
+export const QUOTA_EXHAUSTED_BACKOFF_TIERS_MS = [
+    60000,   // 1 min
+    300000,  // 5 min
+    1800000, // 30 min
+    7200000  // 2 hours
+];
+
+// Backoff config by error type
+export const BACKOFF_BY_ERROR_TYPE = {
+    RATE_LIMIT_EXCEEDED: 5000,      // Standard 5s wait for short rate limits
+    MODEL_CAPACITY_EXHAUSTED: 2000, // Short 2s wait for capacity issues
+    SERVER_ERROR: 1000,             // 1s for 5xx errors
+    UNKNOWN: 2000                   // Default fallback
+};
+
+export const CAPACITY_BACKOFF_TIERS_MS = [5000, 10000, 20000, 30000, 60000];
 
 // Thinking model constants
 export const MIN_SIGNATURE_LENGTH = 50; // Minimum valid thinking signature length
@@ -260,10 +284,17 @@ export default {
     REQUEST_TIMEOUT_MS,
     MAX_WAIT_BEFORE_ERROR_MS,
     RATE_LIMIT_DEDUP_WINDOW_MS,
+    RATE_LIMIT_STATE_RESET_MS,
     MAX_CONSECUTIVE_FAILURES,
     EXTENDED_COOLDOWN_MS,
     CAPACITY_RETRY_DELAY_MS,
     MAX_CAPACITY_RETRIES,
+    FIRST_RETRY_DELAY_MS,
+    SWITCH_ACCOUNT_DELAY_MS,
+    MIN_BACKOFF_MS,
+    QUOTA_EXHAUSTED_BACKOFF_TIERS_MS,
+    BACKOFF_BY_ERROR_TYPE,
+    CAPACITY_BACKOFF_TIERS_MS,
     MIN_SIGNATURE_LENGTH,
     GEMINI_MAX_OUTPUT_TOKENS,
     GEMINI_SKIP_SIGNATURE,
