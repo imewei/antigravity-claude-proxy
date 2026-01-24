@@ -42,7 +42,8 @@ const DEFAULT_CONFIG = {
             criticalThreshold: 0.05, // 5% - exclude from candidates
             staleMs: 300000 // 5 min - max age of quota data to trust
         }
-    }
+    },
+    fallbackEnabled: true // Enable model fallback by default for resilience
 };
 
 // Config locations

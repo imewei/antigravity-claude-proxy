@@ -8,11 +8,19 @@ import { ACCOUNT_CONFIG_PATH, DEFAULT_PORT } from './constants.js';
 import { logger } from './utils/logger.js';
 import { STRATEGY_NAMES } from './account-manager/strategies/index.js';
 import path from 'node:path';
+import { config } from './config.js';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
 const isDebug = args.includes('--debug') || process.env.DEBUG === 'true';
-const isFallbackEnabled = args.includes('--fallback') || process.env.FALLBACK === 'true';
+
+// Determine fallback status
+// Priority: CLI args > Env var > Config > Default (true)
+const explicitlyEnabled = args.includes('--fallback') || process.env.FALLBACK === 'true';
+const explicitlyDisabled = args.includes('--no-fallback') || process.env.FALLBACK === 'false';
+const configFallback = config.fallbackEnabled ?? true;
+
+const isFallbackEnabled = explicitlyEnabled || (!explicitlyDisabled && configFallback);
 
 // Parse --strategy flag (format: --strategy=sticky or --strategy sticky)
 let strategyOverride = null;
