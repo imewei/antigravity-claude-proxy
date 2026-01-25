@@ -19,13 +19,10 @@ async function testRateLimitWaitFallback() {
             text: async () => 'Should not be called in this test'
         });
 
-
         // We can't easily mock the export, but we can verify the behavior by checking
         // if fallback was called.
 
         const { sendMessageStream } = await import('../src/cloudcode/streaming-handler.js');
-
-
 
         // Mock AccountManager
         const mockAccountManager = {
@@ -34,7 +31,7 @@ async function testRateLimitWaitFallback() {
             selectAccount: () => ({ account: null, waitMs: 0 }),
             isAllRateLimited: () => true, // All rate limited
             getMinWaitTimeMs: () => 60000, // 1 minute wait (short enough to trigger wait logic)
-            clearExpiredLimits: () => { },
+            clearExpiredLimits: () => {},
             getHealthTracker: () => ({ getConsecutiveFailures: () => 0 })
         };
 
@@ -60,7 +57,7 @@ async function testRateLimitWaitFallback() {
         let logs = [];
         console.warn = (...args) => {
             logs.push(args.join(' '));
-            // originalWarn(...args); 
+            // originalWarn(...args);
         };
 
         // We also need to mock constants or fallback-config to ensure primary-model has a fallback
@@ -74,7 +71,7 @@ async function testRateLimitWaitFallback() {
             // We need to iterate to trigger execution
             // eslint-disable-next-line no-unused-vars
             for await (const chunk of generator) {
-                // If it successfully chains to fallback, it might eventually fail 
+                // If it successfully chains to fallback, it might eventually fail
                 // because our mock fetch returns 500. Not important.
             }
         } catch {
@@ -85,8 +82,8 @@ async function testRateLimitWaitFallback() {
         global.fetch = originalFetch;
 
         // Check logs for fallback message
-        const fallbackLog = logs.find(l => l.includes('Attempting fallback'));
-        const waitLog = logs.find(l => l.includes('Waiting 1m 0s'));
+        const fallbackLog = logs.find((l) => l.includes('Attempting fallback'));
+        const waitLog = logs.find((l) => l.includes('Waiting 1m 0s'));
 
         console.log('Logs captured:', logs);
 
@@ -104,7 +101,6 @@ async function testRateLimitWaitFallback() {
             }
             process.exit(1);
         }
-
     } catch (error) {
         console.error('\n[ERROR] Test failed:', error.message);
         console.error(error.stack);

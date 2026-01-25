@@ -6,7 +6,6 @@
  * - Manual code handling
  */
 
-
 const { extractCodeFromInput } = require('../src/auth/oauth.js');
 const http = require('http');
 
