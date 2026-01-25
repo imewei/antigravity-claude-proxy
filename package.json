@@ -41,6 +41,7 @@
         "test:strategies": "node tests/test-strategies.cjs",
         "lint": "eslint src tests public/js bin",
         "lint:fix": "eslint src tests public/js bin --fix",
+        "test:waitfallback": "node tests/test-rate-limit-wait-fallback.cjs",
         "format": "prettier --write .",
         "format:check": "prettier --check ."
     },

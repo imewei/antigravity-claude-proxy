@@ -55,6 +55,7 @@ npm run test:images        # Image processing
 npm run test:caching       # Prompt caching
 npm run test:crossmodel    # Cross-model thinking signatures
 npm run test:oauth         # OAuth no-browser mode
+npm run test:waitfallback  # Test fallback on short rate limit wait
 
 # Run strategy unit tests (no server required)
 node tests/test-strategies.cjs

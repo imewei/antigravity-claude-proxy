@@ -84,26 +84,27 @@ export async function* sendMessageStream(
                 const minWaitMs = accountManager.getMinWaitTimeMs(model);
                 const resetTime = new Date(Date.now() + minWaitMs).toISOString();
 
-                // If wait time is too long (> 2 minutes), try fallback first, then throw error
-                if (minWaitMs > MAX_WAIT_BEFORE_ERROR_MS) {
-                    // Check if fallback is enabled and available
-                    if (fallbackEnabled) {
-                        const fallbackModel = getFallbackModel(model);
-                        if (fallbackModel) {
-                            logger.warn(
-                                `[CloudCode] All accounts exhausted for ${model} (${formatDuration(minWaitMs)} wait). Attempting fallback to ${fallbackModel} (streaming)`
-                            );
-                            const fallbackRequest = { ...anthropicRequest, model: fallbackModel };
-                            // Pass fallbackEnabled=true (or inherit) to allow chaining
-                            yield* sendMessageStream(
-                                fallbackRequest,
-                                accountManager,
-                                fallbackEnabled,
-                                signal
-                            );
-                            return;
-                        }
+                // Check if fallback is enabled and available - PRIORITIZE FALLBACK over waiting
+                if (fallbackEnabled) {
+                    const fallbackModel = getFallbackModel(model);
+                    if (fallbackModel) {
+                        logger.warn(
+                            `[CloudCode] All accounts exhausted for ${model} (${formatDuration(minWaitMs)} wait). Attempting fallback to ${fallbackModel} (streaming)`
+                        );
+                        const fallbackRequest = { ...anthropicRequest, model: fallbackModel };
+                        // Pass fallbackEnabled=true (or inherit) to allow chaining
+                        yield* sendMessageStream(
+                            fallbackRequest,
+                            accountManager,
+                            fallbackEnabled,
+                            signal
+                        );
+                        return;
                     }
+                }
+
+                // If wait time is too long (> 2 minutes), try fallback first (already tried above), then throw error
+                if (minWaitMs > MAX_WAIT_BEFORE_ERROR_MS) {
                     throw new Error(
                         `RESOURCE_EXHAUSTED: Rate limited on ${model}. Quota will reset after ${formatDuration(minWaitMs)}. Next available: ${resetTime}`
                     );
