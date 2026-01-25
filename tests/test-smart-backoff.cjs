@@ -11,8 +11,7 @@ const assert = require('assert');
 const { parseRateLimitReason, parseResetTime } = require('../src/cloudcode/rate-limit-parser.js');
 const {
     QUOTA_EXHAUSTED_BACKOFF_TIERS_MS,
-    BACKOFF_BY_ERROR_TYPE,
-    MIN_BACKOFF_MS
+    BACKOFF_BY_ERROR_TYPE
 } = require('../src/constants.js');
 const { calculateSmartBackoff } = require('../src/cloudcode/retry-utils.js');
 

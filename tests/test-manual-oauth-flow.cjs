@@ -6,15 +6,12 @@
  * - Manual code handling
  */
 
-const assert = require('assert');
+
 const { extractCodeFromInput } = require('../src/auth/oauth.js');
 const http = require('http');
 
 // Mock OAUTH_CONFIG for tests
 process.env.TEST_OAUTH_PORT = 59999;
-const OAUTH_CONFIG = {
-    callbackPort: 59999
-};
 
 // We need to mock the OAUTH_CONFIG in the module, but since it's an import,
 // we'll rely on testing the pure functions and mocking the server behavior.
